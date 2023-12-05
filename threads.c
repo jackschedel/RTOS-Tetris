@@ -34,6 +34,10 @@
 #define JOYSTICK_MIDPOINT 2100
 #define JOYSTICK_DEADZONE 200
 #define NUM_SHAPES 7
+#define FRAME_X_OFF 30
+#define FRAME_Y_OFF 10
+#define BLOCK_SIZE 11
+#define YELLOW 0x07FF
 
 uint8_t point_count = 0;
 uint8_t line_count = 1;
@@ -54,32 +58,30 @@ void Idle_Thread()
 void FallingBlock_Thread()
 {
 
-    uint8_t blockY = ROWS + 4;
+    uint8_t blockY = ROWS + 2;
 
-    uint8_t blockX = 4;
+    uint8_t blockX = 3;
 
-    uint8_t curBlock = 0;
+    uint8_t curBlock = 6;
 
-    // (width << 4) | height
+    uint8_t newBlock = 1;
 
-    // https://www.russlandjournal.de/en/wp-content/uploads/sites/2/2014/08/tetris-parts.jpg
-    // w/ bottom 3 rotated 90 CCW
-    unsigned char dims[NUM_SHAPES] = { 0b00010100, 0b00100011, 0b00100011, 0b00100010, 0b00100011,
-                                       0b00100011, 0b00100011 };
+    // https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
+    // 1x4 is 5, 2x2 is 6
 
-    // 2x4 grid (top is only 1x4)
-    // 0 4
-    // 1 5
-    // 2 6
-    // 3 7
-    unsigned char shapes[NUM_SHAPES] = { 0b11110000, 0b00010111, 0b01110001, 0b00110011, 0b01100011,
-                                         0b01110010, 0b00110110 };
+    // 3x3 grid (middle always filled)
+    // 0 1 2
+    // 3 F 4
+    // 5 6 7
+    unsigned char shapes[NUM_SHAPES - 2] = { 0b10011000, 0b00111000, 0b01110000, 0b01011000,
+                                             0b11001000 };
 
     while (true)
     {
         // left = 1
         // right = 2
         // down = 3
+        // rotate = 4
         uint8_t move = G8RTOS_ReadFIFO(0);
 
         if (move == 1)
@@ -88,17 +90,41 @@ void FallingBlock_Thread()
             {
                 blockX--;
             }
+            else
+            {
+                move = 0;
+            }
         }
         else
         {
-            uint8_t curWidth = dims[curBlock] >> 4 * (1 % (blockRotation + 1)) & 15;
-            uint8_t curHeight = dims[curBlock] >> 4 * (1 % blockRotation) & 15;
+
+            uint8_t dims;
+
+            if (curBlock > 4)
+            {
+                dims = 0b00110010;
+            }
+            else if (curBlock == 5)
+            {
+                dims = 0b010000001;
+            }
+            else
+            {
+                dims = 0b00100010;
+            }
+
+            uint8_t curWidth = dims >> 4 * (1 % (blockRotation + 1)) & 15;
+            uint8_t curHeight = dims >> 4 * (1 % blockRotation) & 15;
 
             if (move == 2)
             {
                 if (blockX + curWidth < COLS)
                 {
                     blockX++;
+                }
+                else
+                {
+                    move = 0;
                 }
             }
             else
@@ -111,13 +137,54 @@ void FallingBlock_Thread()
                 else
                 {
                     // hit bottom
+                    move = -1;
                     curBlock++;
                     blockRotation = 1;
+                    newBlock = 1;
 
                     if (curBlock >= NUM_SHAPES)
                         curBlock = 0;
                 }
             }
+        }
+
+        if (curBlock == 6)
+        {
+            if (newBlock)
+            {
+                ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                     BLOCK_SIZE * 2, BLOCK_SIZE * 2, YELLOW);
+                newBlock = 0;
+            }
+            else if (move == 1)
+            {
+                ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 2) * BLOCK_SIZE,
+                FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                     BLOCK_SIZE, BLOCK_SIZE * 2, 0);
+                ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                     BLOCK_SIZE, BLOCK_SIZE * 2, YELLOW);
+            }
+            else if (move == 2)
+            {
+                ST7789_DrawRectangle(FRAME_X_OFF + (blockX - 1) * BLOCK_SIZE,
+                FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                     BLOCK_SIZE, BLOCK_SIZE * 2, 0);
+                ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE,
+                FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                     BLOCK_SIZE, BLOCK_SIZE * 2, YELLOW);
+            }
+            else if (move == 3)
+            {
+                ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                FRAME_Y_OFF + (blockY + 2) * BLOCK_SIZE,
+                                     BLOCK_SIZE * 2, BLOCK_SIZE, 0);
+                ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                     BLOCK_SIZE * 2, BLOCK_SIZE, YELLOW);
+            }
+
         }
 
         UARTprintf("\nX: %d\n", blockX);
@@ -191,6 +258,7 @@ void Get_Input_P()
             if (blockRotation > 4)
                 blockRotation = 1;
             rotate_released = false;
+            G8RTOS_WriteFIFO(0, 4);
         }
     }
     else
