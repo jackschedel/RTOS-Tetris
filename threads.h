@@ -33,8 +33,8 @@ void Get_Joystick_P();
 
 void GPIOE_Handler();
 
-void setBit(int row, int col, int value);
-uint8_t getBit(int row, int col);
+void setStaticBlockBit(int row, int col, int value);
+uint8_t getStaticBlockBit(int row, int col);
 
 /********************************Thread Functions***********************************/
 
