@@ -40,14 +40,15 @@
 #define YELLOW 0x07FF
 #define LIGHT_BLUE 0xFFE0
 #define PURPLE 0xF813
+#define GRAY 0x632C
+
 #define START_X 3
 #define START_Y ROWS - 2
 
 uint8_t point_count = 0;
 uint8_t line_count = 1;
 uint8_t blockRotation = 1;
-
-unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
+int8_t blockY = START_Y;
 
 /*************************************Defines***************************************/
 
@@ -62,13 +63,14 @@ void Idle_Thread()
 void FallingBlock_Thread()
 {
 
-    uint8_t blockY = START_Y;
-
     uint8_t blockX = START_X;
 
-    uint8_t curBlock = 4;
+    uint8_t curBlock = 5;
 
     uint8_t reRenderBlock = 1;
+
+    uint8_t piecePlaced = 0;
+    uint8_t needsMove = 1;
 
     ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF - 1,
     FRAME_X_OFF + BLOCK_SIZE * COLS + 1,
@@ -101,6 +103,7 @@ void FallingBlock_Thread()
         // rotate = 4
         uint8_t move = G8RTOS_ReadFIFO(0);
 
+        needsMove = 1;
         if (move == 1)
         {
             if (blockX > 0)
@@ -145,24 +148,9 @@ void FallingBlock_Thread()
             }
             else if (move == 3)
             {
-                if (blockY >= 1)
-                {
-                    blockY--;
 
-                }
-                else
-                {
-                    // hit bottom
-                    move = -1;
-                    curBlock++;
-                    blockRotation = 1;
-                    reRenderBlock = 1;
-                    blockY = START_Y;
-                    blockX = START_X;
+                blockY--;
 
-                    if (curBlock >= NUM_SHAPES)
-                        curBlock = 0;
-                }
             }
             else if (move == 4)
             {
@@ -173,162 +161,332 @@ void FallingBlock_Thread()
             }
         }
 
-        // others
         if (curBlock <= 4)
+        {
+            // todo check collision on others
+        }
+        else if (curBlock == 6)
         {
             if (move == 1)
             {
-                ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE,
-                FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                     BLOCK_SIZE * 3, BLOCK_SIZE * 3, 0);
-
-            }
-            else if (move == 2)
-            {
-                ST7789_DrawRectangle(FRAME_X_OFF + (blockX - 1) * BLOCK_SIZE,
-                FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                     BLOCK_SIZE * 3, BLOCK_SIZE * 3, 0);
-            }
-            else if (move == 3)
-            {
-                ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE,
-                                     BLOCK_SIZE * 3, BLOCK_SIZE * 3, 0);
-            }
-            else if (move == 4)
-            {
-                ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                     BLOCK_SIZE * 3, BLOCK_SIZE * 3, 0);
-            }
-
-            ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-            FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                 BLOCK_SIZE * 3, BLOCK_SIZE * 3, PURPLE);
-        }
-        //  2x2
-        else if (curBlock == 6)
-        {
-            if (reRenderBlock)
-            {
-                ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                     BLOCK_SIZE * 2, BLOCK_SIZE * 2, YELLOW);
-                reRenderBlock = 0;
-            }
-            else if (move == 1)
-            {
-                ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 2) * BLOCK_SIZE,
-                FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                     BLOCK_SIZE, BLOCK_SIZE * 2, 0);
-                ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                     BLOCK_SIZE, BLOCK_SIZE * 2, YELLOW);
-            }
-            else if (move == 2)
-            {
-                ST7789_DrawRectangle(FRAME_X_OFF + (blockX - 1) * BLOCK_SIZE,
-                FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                     BLOCK_SIZE, BLOCK_SIZE * 2, 0);
-                ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE,
-                FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                     BLOCK_SIZE, BLOCK_SIZE * 2, YELLOW);
-            }
-            else if (move == 3)
-            {
-                ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                FRAME_Y_OFF + (blockY + 2) * BLOCK_SIZE,
-                                     BLOCK_SIZE * 2, BLOCK_SIZE, 0);
-                ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                     BLOCK_SIZE * 2, BLOCK_SIZE, YELLOW);
-            }
-        }
-        // 1x4
-        else if (curBlock == 5)
-        {
-            // straight up
-            if (blockRotation % 2 - 1)
-            {
-                if (reRenderBlock || move != 3)
+                if (getStaticBlockBit(blockX, blockY) || getStaticBlockBit(blockX, blockY + 1))
                 {
-                    if (move == 1)
-                    {
-                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE,
-                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                             BLOCK_SIZE, BLOCK_SIZE * 4, 0);
-                    }
-                    else if (move == 2)
-                    {
-                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX - 1) * BLOCK_SIZE,
-                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                             BLOCK_SIZE, BLOCK_SIZE * 4, 0);
-                    }
-                    else if (move == 4)
-                    {
-                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                             BLOCK_SIZE * 4, BLOCK_SIZE, 0);
-                    }
+                    blockX++;
+                    needsMove = 0;
+
+                }
+            }
+            else if (move == 2)
+            {
+                if (getStaticBlockBit(blockX + 1, blockY)
+                        || getStaticBlockBit(blockX + 1, blockY + 1))
+                {
+                    blockX--;
+                    needsMove = 0;
+
+                }
+
+            }
+            else if (move == 3)
+            {
+                if (blockY < 0 || getStaticBlockBit(blockX, blockY)
+                        || getStaticBlockBit(blockX + 1, blockY))
+                {
+                    blockY++;
+                    piecePlaced = 1;
+                    needsMove = 0;
 
                     ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
                     FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                         BLOCK_SIZE, BLOCK_SIZE * 4, LIGHT_BLUE);
-                    reRenderBlock = 0;
+                                         BLOCK_SIZE * 2, BLOCK_SIZE * 2, GRAY);
+                }
+            }
+
+        }
+        else if (curBlock == 5)
+        {
+            if (blockRotation % 2 - 1)
+            {
+                if (move == 1)
+                {
+                    if (getStaticBlockBit(blockX, blockY) || getStaticBlockBit(blockX, blockY + 1)
+                            || getStaticBlockBit(blockX, blockY + 2)
+                            || getStaticBlockBit(blockX, blockY + 3))
+                    {
+                        blockX++;
+                        needsMove = 0;
+
+                    }
+                }
+                else if (move == 2)
+                {
+                    if (getStaticBlockBit(blockX, blockY) || getStaticBlockBit(blockX, blockY + 1)
+                            || getStaticBlockBit(blockX, blockY + 2)
+                            || getStaticBlockBit(blockX, blockY + 3))
+                    {
+                        blockX--;
+                        needsMove = 0;
+
+                    }
+
                 }
                 else if (move == 3)
                 {
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                    FRAME_Y_OFF + (blockY + 4) * BLOCK_SIZE,
-                                         BLOCK_SIZE, BLOCK_SIZE, 0);
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                         BLOCK_SIZE, BLOCK_SIZE, LIGHT_BLUE);
-                }
+                    if (blockY < 0 || getStaticBlockBit(blockX, blockY) || blockY < 0)
+                    {
+                        blockY++;
+                        needsMove = 0;
 
+                        piecePlaced = 1;
+                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                             BLOCK_SIZE, BLOCK_SIZE * 4, GRAY);
+                    }
+                }
             }
             else
             {
-                if (reRenderBlock || move == 3)
+                if (move == 1)
                 {
-                    if (move == 3)
+                    if (getStaticBlockBit(blockX, blockY))
                     {
-                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                        FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE,
-                                             BLOCK_SIZE * 4, BLOCK_SIZE, 0);
+                        blockX++;
+                        needsMove = 0;
+
                     }
-                    else if (move == 4)
+                }
+                else if (move == 2)
+                {
+                    if (getStaticBlockBit(blockX, blockY))
                     {
-                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                             BLOCK_SIZE, BLOCK_SIZE * 4, 0xFFFF);
+                        blockX--;
+                        needsMove = 0;
+
                     }
 
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                         BLOCK_SIZE * 4, BLOCK_SIZE, LIGHT_BLUE);
-                    reRenderBlock = 0;
                 }
-                else if (move == 1)
+                else if (move == 3)
                 {
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 4) * BLOCK_SIZE,
+                    if (blockY < 0 || getStaticBlockBit(blockX, blockY)
+                            || getStaticBlockBit(blockX + 1, blockY)
+                            || getStaticBlockBit(blockX + 2, blockY)
+                            || getStaticBlockBit(blockX + 3, blockY))
+                    {
+                        blockY++;
+                        piecePlaced = 1;
+                        needsMove = 0;
+
+                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                             BLOCK_SIZE * 4, BLOCK_SIZE, GRAY);
+                    }
+                }
+            }
+        }
+
+        // others
+        if (needsMove)
+        {
+            if (curBlock <= 4)
+            {
+                if (move == 1)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE,
                     FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                         BLOCK_SIZE, BLOCK_SIZE, 0);
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                         BLOCK_SIZE, BLOCK_SIZE, LIGHT_BLUE);
+                                         BLOCK_SIZE * 3, BLOCK_SIZE * 3, 0);
+
                 }
                 else if (move == 2)
                 {
                     ST7789_DrawRectangle(FRAME_X_OFF + (blockX - 1) * BLOCK_SIZE,
                     FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                         BLOCK_SIZE, BLOCK_SIZE, 0);
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE,
+                                         BLOCK_SIZE * 3, BLOCK_SIZE * 3, 0);
+                }
+                else if (move == 3)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE,
+                                         BLOCK_SIZE * 3, BLOCK_SIZE * 3, 0);
+                }
+                else if (move == 4)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
                     FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                         BLOCK_SIZE, BLOCK_SIZE, LIGHT_BLUE);
+                                         BLOCK_SIZE * 3, BLOCK_SIZE * 3, 0);
                 }
 
+                ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                     BLOCK_SIZE * 3, BLOCK_SIZE * 3, PURPLE);
             }
+            //  2x2
+            else if (curBlock == 6)
+            {
+                if (reRenderBlock)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                         BLOCK_SIZE * 2, BLOCK_SIZE * 2, YELLOW);
+                    reRenderBlock = 0;
+                }
+                else if (move == 1)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 2) * BLOCK_SIZE,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                         BLOCK_SIZE, BLOCK_SIZE * 2, 0);
+                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                         BLOCK_SIZE, BLOCK_SIZE * 2, YELLOW);
+                }
+                else if (move == 2)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX - 1) * BLOCK_SIZE,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                         BLOCK_SIZE, BLOCK_SIZE * 2, 0);
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                         BLOCK_SIZE, BLOCK_SIZE * 2, YELLOW);
+                }
+                else if (move == 3)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                    FRAME_Y_OFF + (blockY + 2) * BLOCK_SIZE,
+                                         BLOCK_SIZE * 2, BLOCK_SIZE, 0);
+                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                         BLOCK_SIZE * 2, BLOCK_SIZE, YELLOW);
+                }
+            }
+            // 1x4
+            else if (curBlock == 5)
+            {
+                // straight up
+                if (blockRotation % 2 - 1)
+                {
+                    if (reRenderBlock || move != 3)
+                    {
+                        if (move == 1)
+                        {
+                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE,
+                            FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                                 BLOCK_SIZE, BLOCK_SIZE * 4, 0);
+                        }
+                        else if (move == 2)
+                        {
+                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX - 1) * BLOCK_SIZE,
+                            FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                                 BLOCK_SIZE, BLOCK_SIZE * 4, 0);
+                        }
+                        else if (move == 4)
+                        {
+                            ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                            FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                                 BLOCK_SIZE * 4, BLOCK_SIZE, 0);
+                        }
+
+                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                             BLOCK_SIZE, BLOCK_SIZE * 4, LIGHT_BLUE);
+                        reRenderBlock = 0;
+                    }
+                    else if (move == 3)
+                    {
+                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                        FRAME_Y_OFF + (blockY + 4) * BLOCK_SIZE,
+                                             BLOCK_SIZE, BLOCK_SIZE, 0);
+                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                             BLOCK_SIZE, BLOCK_SIZE, LIGHT_BLUE);
+                    }
+
+                }
+                else
+                {
+                    if (reRenderBlock || move == 3)
+                    {
+                        if (move == 3)
+                        {
+                            ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                            FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE,
+                                                 BLOCK_SIZE * 4, BLOCK_SIZE, 0);
+                        }
+                        else if (move == 4)
+                        {
+                            ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                            FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                                 BLOCK_SIZE, BLOCK_SIZE * 4, 0);
+                        }
+
+                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                             BLOCK_SIZE * 4, BLOCK_SIZE, LIGHT_BLUE);
+                        reRenderBlock = 0;
+                    }
+                    else if (move == 1)
+                    {
+                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 4) * BLOCK_SIZE,
+                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                             BLOCK_SIZE, BLOCK_SIZE, 0);
+                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                             BLOCK_SIZE, BLOCK_SIZE, LIGHT_BLUE);
+                    }
+                    else if (move == 2)
+                    {
+                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX - 1) * BLOCK_SIZE,
+                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                             BLOCK_SIZE, BLOCK_SIZE, 0);
+                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE,
+                        FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                             BLOCK_SIZE, BLOCK_SIZE, LIGHT_BLUE);
+                    }
+
+                }
+            }
+        }
+
+        if (piecePlaced)
+        {
+
+            if (curBlock == 6)
+            {
+                setStaticBlockBit(blockX, blockY, 1);
+                setStaticBlockBit(blockX, blockY + 1, 1);
+                setStaticBlockBit(blockX + 1, blockY, 1);
+                setStaticBlockBit(blockX + 1, blockY + 1, 1);
+
+            }
+            else if (curBlock == 5)
+            {
+                if (blockRotation % 2 - 1)
+                {
+                    setStaticBlockBit(blockX, blockY, 1);
+                    setStaticBlockBit(blockX, blockY + 1, 1);
+                    setStaticBlockBit(blockX, blockY + 2, 1);
+                    setStaticBlockBit(blockX, blockY + 3, 1);
+                }
+                else
+                {
+                    setStaticBlockBit(blockX, blockY, 1);
+                    setStaticBlockBit(blockX + 1, blockY, 1);
+                    setStaticBlockBit(blockX + 2, blockY, 1);
+                    setStaticBlockBit(blockX + 3, blockY, 1);
+
+                }
+            }
+
+            curBlock++;
+            blockRotation = 1;
+            reRenderBlock = 1;
+            blockY = START_Y;
+            blockX = START_X;
+
+            if (curBlock >= NUM_SHAPES)
+                curBlock = 5;
+
+            piecePlaced = 0;
+
+            // todo clear FIFO bc fastdrop
         }
 
         UARTprintf("\nX: %d\n", blockX);
@@ -361,6 +519,7 @@ void DrawUI_Thread()
 uint16_t joy_released = 1;
 uint16_t rotate_released = 1;
 uint16_t drop_released = 1;
+uint8_t joy_i = 0;
 
 void Get_Input_P()
 {
@@ -414,7 +573,11 @@ void Get_Input_P()
     {
         if (drop_released)
         {
-// todo drop
+
+            for (joy_i = 0; joy_i <= blockY; joy_i++)
+            {
+                G8RTOS_WriteFIFO(0, 3);
+            }
             drop_released = false;
         }
     }
@@ -433,7 +596,9 @@ void Gravity_P()
     G8RTOS_Yield();
 }
 
-void setStaticBlockBit(int row, int col, int value)
+unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
+
+void setStaticBlockBit(int col, int row, int value)
 {
     if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
     {
@@ -449,7 +614,7 @@ void setStaticBlockBit(int row, int col, int value)
         static_blocks[byteIndex] &= ~(1 << bitInByte);
 }
 
-uint8_t getStaticBlockBit(int row, int col)
+uint8_t getStaticBlockBit(int col, int row)
 {
     if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
     {
