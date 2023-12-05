@@ -38,6 +38,7 @@
 #define FRAME_Y_OFF 10
 #define BLOCK_SIZE 11
 #define YELLOW 0x07FF
+#define LIGHT_BLUE 0xFFE0
 
 uint8_t point_count = 0;
 uint8_t line_count = 1;
@@ -64,7 +65,20 @@ void FallingBlock_Thread()
 
     uint8_t curBlock = 6;
 
-    uint8_t newBlock = 1;
+    uint8_t reRenderBlock = 1;
+
+    ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF - 1,
+    FRAME_X_OFF + BLOCK_SIZE * COLS + 1,
+                    FRAME_Y_OFF - 1, 0xFFFF);
+    ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF - 1,
+    FRAME_X_OFF - 1,
+                    FRAME_Y_OFF + BLOCK_SIZE * ROWS + 1, 0xFFFF);
+    ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF + BLOCK_SIZE * ROWS + 1,
+    FRAME_X_OFF + BLOCK_SIZE * COLS + 1,
+                    FRAME_Y_OFF + BLOCK_SIZE * ROWS + 1, 0xFFFF);
+    ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * COLS + 1, FRAME_Y_OFF - 1,
+    FRAME_X_OFF + BLOCK_SIZE * COLS + 1,
+                    FRAME_Y_OFF + BLOCK_SIZE * ROWS + 1, 0xFFFF);
 
     // https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
     // 1x4 is 5, 2x2 is 6
@@ -113,12 +127,12 @@ void FallingBlock_Thread()
                 dims = 0b00100010;
             }
 
-            uint8_t curWidth = dims >> 4 * (1 % (blockRotation + 1)) & 15;
-            uint8_t curHeight = dims >> 4 * (1 % blockRotation) & 15;
+            uint8_t curWidth = dims >> 4 * (blockRotation % 2) & 15;
+            uint8_t curHeight = dims >> 4 * ((blockRotation + 1) % 2) & 15;
 
             if (move == 2)
             {
-                if (blockX + curWidth < COLS)
+                if (blockX + curWidth <= COLS)
                 {
                     blockX++;
                 }
@@ -127,7 +141,7 @@ void FallingBlock_Thread()
                     move = 0;
                 }
             }
-            else
+            else if (move == 3)
             {
                 if (blockY - curHeight >= 0)
                 {
@@ -140,22 +154,27 @@ void FallingBlock_Thread()
                     move = -1;
                     curBlock++;
                     blockRotation = 1;
-                    newBlock = 1;
+                    reRenderBlock = 1;
 
                     if (curBlock >= NUM_SHAPES)
                         curBlock = 0;
                 }
             }
+            else if (move == 4)
+            {
+                reRenderBlock = 1;
+            }
         }
 
+        // 2x2
         if (curBlock == 6)
         {
-            if (newBlock)
+            if (reRenderBlock)
             {
                 ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
                 FRAME_Y_OFF + blockY * BLOCK_SIZE,
                                      BLOCK_SIZE * 2, BLOCK_SIZE * 2, YELLOW);
-                newBlock = 0;
+                reRenderBlock = 0;
             }
             else if (move == 1)
             {
@@ -184,7 +203,48 @@ void FallingBlock_Thread()
                 FRAME_Y_OFF + blockY * BLOCK_SIZE,
                                      BLOCK_SIZE * 2, BLOCK_SIZE, YELLOW);
             }
-
+        }
+        // 1x4
+        else if (curBlock == 5)
+        {
+            // straight up
+            if (blockRotation % 2 - 1)
+            {
+                if (reRenderBlock)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                    FRAME_Y_OFF + (blockY - 1) * BLOCK_SIZE,
+                                         BLOCK_SIZE, BLOCK_SIZE * 4, LIGHT_BLUE);
+                    reRenderBlock = 0;
+                }
+                else if (move == 1)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 2) * BLOCK_SIZE,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                         BLOCK_SIZE, BLOCK_SIZE * 2, 0);
+                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                         BLOCK_SIZE, BLOCK_SIZE * 2, LIGHT_BLUE);
+                }
+                else if (move == 2)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX - 1) * BLOCK_SIZE,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                         BLOCK_SIZE, BLOCK_SIZE * 2, 0);
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                         BLOCK_SIZE, BLOCK_SIZE * 2, LIGHT_BLUE);
+                }
+                else if (move == 3)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                    FRAME_Y_OFF + (blockY + 2) * BLOCK_SIZE,
+                                         BLOCK_SIZE * 2, BLOCK_SIZE, 0);
+                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
+                                         BLOCK_SIZE * 2, BLOCK_SIZE, LIGHT_BLUE);
+                }
+            }
         }
 
         UARTprintf("\nX: %d\n", blockX);
@@ -270,7 +330,7 @@ void Get_Input_P()
     {
         if (drop_released)
         {
-            // todo drop
+// todo drop
             drop_released = false;
         }
     }
