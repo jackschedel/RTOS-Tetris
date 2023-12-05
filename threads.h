@@ -28,10 +28,8 @@ void FallingBlock_Thread();
 void StaticBlocks_Thread();
 void DrawUI_Thread();
 
-void FallingBlockGravity_P();
-void Get_Joystick_P();
-
-void GPIOE_Handler();
+void Gravity_P();
+void Get_Input_P();
 
 void setStaticBlockBit(int row, int col, int value);
 uint8_t getStaticBlockBit(int row, int col);

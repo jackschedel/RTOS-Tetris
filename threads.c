@@ -33,9 +33,11 @@
 #define BITS_PER_BYTE 8
 #define JOYSTICK_MIDPOINT 2100
 #define JOYSTICK_DEADZONE 200
+#define NUM_SHAPES 7
 
 uint8_t point_count = 0;
 uint8_t line_count = 1;
+uint8_t blockRotation = 1;
 
 unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
 
@@ -58,12 +60,20 @@ void FallingBlock_Thread()
 
     uint8_t curBlock = 0;
 
-    uint8_t blockRotation = 1;
-
     // (width << 4) | height
+
     // https://www.russlandjournal.de/en/wp-content/uploads/sites/2/2014/08/tetris-parts.jpg
-    unsigned char dims[7] = { 0b00010100, 0b00100011, 0b00100011, 0b00100010, 0b00110010,
-                              0b00110010, 0b00110010 };
+    // w/ bottom 3 rotated 90 CCW
+    unsigned char dims[NUM_SHAPES] = { 0b00010100, 0b00100011, 0b00100011, 0b00100010, 0b00100011,
+                                       0b00100011, 0b00100011 };
+
+    // 2x4 grid (top is only 1x4)
+    // 0 4
+    // 1 5
+    // 2 6
+    // 3 7
+    unsigned char shapes[NUM_SHAPES] = { 0b11110000, 0b00010111, 0b01110001, 0b00110011, 0b01100011,
+                                         0b01110010, 0b00110110 };
 
     while (true)
     {
@@ -96,16 +106,23 @@ void FallingBlock_Thread()
                 if (blockY - curHeight >= 0)
                 {
                     blockY--;
+
                 }
                 else
                 {
                     // hit bottom
+                    curBlock++;
+                    blockRotation = 1;
+
+                    if (curBlock >= NUM_SHAPES)
+                        curBlock = 0;
                 }
             }
         }
 
         UARTprintf("\nX: %d\n", blockX);
         UARTprintf("Y: %d\n", blockY);
+        UARTprintf("Rotation: %d\n", blockRotation);
 
     }
 }
@@ -130,9 +147,11 @@ void DrawUI_Thread()
     }
 }
 
-uint16_t released = 1;
+uint16_t joy_released = 1;
+uint16_t rotate_released = 1;
+uint16_t drop_released = 1;
 
-void Get_Joystick_P()
+void Get_Input_P()
 {
     int16_t yRaw = JOYSTICK_GetY();
 
@@ -142,42 +161,64 @@ void Get_Joystick_P()
 
     xRaw -= JOYSTICK_MIDPOINT;
 
-    if (!released && abs(yRaw) < JOYSTICK_DEADZONE && abs(xRaw) < JOYSTICK_DEADZONE)
+    if (!joy_released && abs(yRaw) < JOYSTICK_DEADZONE && abs(xRaw) < JOYSTICK_DEADZONE)
     {
-        released = 1;
+        joy_released = 1;
     }
-    else if (released && xRaw > JOYSTICK_DEADZONE)
+    else if (joy_released && xRaw > JOYSTICK_DEADZONE)
     {
         G8RTOS_WriteFIFO(0, 1);
-        released = 0;
+        joy_released = 0;
     }
-    else if (released && xRaw < -JOYSTICK_DEADZONE)
+    else if (joy_released && xRaw < -JOYSTICK_DEADZONE)
     {
         G8RTOS_WriteFIFO(0, 2);
-        released = 0;
+        joy_released = 0;
     }
-    else if (released && yRaw < -JOYSTICK_DEADZONE)
+    else if (joy_released && yRaw < -JOYSTICK_DEADZONE)
     {
         G8RTOS_WriteFIFO(0, 3);
-        released = 0;
+        joy_released = 0;
+    }
+
+    uint8_t buttons = MultimodButtons_Get();
+
+    if (buttons & 2)
+    {
+        if (rotate_released)
+        {
+            blockRotation++;
+            if (blockRotation > 4)
+                blockRotation = 1;
+            rotate_released = false;
+        }
+    }
+    else
+    {
+        rotate_released = true;
+    }
+
+    if (buttons & 4)
+    {
+        if (drop_released)
+        {
+            // todo drop
+            drop_released = false;
+        }
+    }
+    else
+    {
+        drop_released = true;
     }
 
     G8RTOS_Yield();
 
 }
 
-void FallingBlockGravity_P()
+void Gravity_P()
 {
     G8RTOS_WriteFIFO(0, 3);
     G8RTOS_Yield();
-}
-
-void GPIOE_Handler()
-{
-//G8RTOS_SignalSemaphore(&sem_buttons);
-    GPIOIntClear(GPIO_PORTE_BASE, 0);
-    IntDisable(INT_GPIOE);
-    IntPendClear(INT_GPIOE);
 }
 
 void setStaticBlockBit(int row, int col, int value)

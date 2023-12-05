@@ -71,8 +71,8 @@ int main(void)
     //G8RTOS_AddThread(StaticBlocks_Thread, 251, "Stat", 3);
     //G8RTOS_AddThread(DrawUI_Thread, 250, "UI", 1);
 
-    G8RTOS_Add_PeriodicEvent(Get_Joystick_P, 10, 50);
-    G8RTOS_Add_PeriodicEvent(FallingBlockGravity_P, 800, 2);
+    G8RTOS_Add_PeriodicEvent(Get_Input_P, 10, 50);
+    G8RTOS_Add_PeriodicEvent(Gravity_P, 800, 2);
 
     //JOYSTICK_IntEnable();
 
