@@ -62,25 +62,19 @@ int main(void)
 
     // Add threads, initialize semaphores here!
     G8RTOS_InitSemaphore(&sem_UART, 1);
-    G8RTOS_InitSemaphore(&sem_buttons, 0);
-    G8RTOS_InitSemaphore(&sem_jumping, 0);
-    G8RTOS_InitSemaphore(&sem_died, 0);
-    G8RTOS_InitSemaphore(&sem_reset, 1);
-    G8RTOS_InitSemaphore(&sem_4, 1);
+    G8RTOS_InitSemaphore(&sem_gameEnd, 0);
+    G8RTOS_InitSemaphore(&sem_clearLine, 0);
 
     G8RTOS_InitFIFO(0);
-    G8RTOS_InitFIFO(1);
 
-    G8RTOS_AddThread(Obstacle_Thread, 252, "Obstacle", 2);
-    G8RTOS_AddThread(Dino_Thread, 251, "Dino", 3);
-    G8RTOS_AddThread(Reset_Thread, 250, "Reset", 1);
+    G8RTOS_AddThread(FallingBlock_Thread, 252, "Fall", 2);
+    G8RTOS_AddThread(StaticBlocks_Thread, 251, "Stat", 3);
+    G8RTOS_AddThread(DrawUI_Thread, 250, "UI", 1);
 
-    //G8RTOS_AddThread(Read_JoystickPress_Thread, 252, "JoyRead", 3);
-
-    //G8RTOS_Add_PeriodicEvent(Print_WorldCoords_P, 100, 1);
     G8RTOS_Add_PeriodicEvent(Get_Joystick_P, 10, 50);
+    G8RTOS_Add_PeriodicEvent(FallingBlockGravity_P, 200, 2);
 
-    JOYSTICK_IntEnable();
+    //JOYSTICK_IntEnable();
 
     G8RTOS_Launch();
 

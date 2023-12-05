@@ -15,33 +15,26 @@
 /***********************************Semaphores**************************************/
 
 semaphore_t sem_UART;
-semaphore_t sem_buttons;
-semaphore_t sem_jumping;
-semaphore_t sem_died;
-semaphore_t sem_reset;
-semaphore_t sem_4;
+semaphore_t sem_gameEnd;
+semaphore_t sem_clearLine;
 
 /***********************************Semaphores**************************************/
 
 /********************************Thread Functions***********************************/
 
-void EmptyThreadWait();
-
 void Idle_Thread(void);
 
-void Obstacle_Thread();
-void CamMove_Thread();
-void Cube_Thread();
-void Read_Buttons_Thread();
-void Read_JoystickPress_Thread();
-void Dino_Thread();
+void FallingBlock_Thread();
+void StaticBlocks_Thread();
+void DrawUI_Thread();
 
-void Print_WorldCoords_P();
+void FallingBlockGravity_P();
 void Get_Joystick_P();
-void Reset_Thread();
 
 void GPIOE_Handler();
-void GPIOD_Handler();
+
+void setBit(int row, int col, int value);
+uint8_t getBit(int row, int col);
 
 /********************************Thread Functions***********************************/
 

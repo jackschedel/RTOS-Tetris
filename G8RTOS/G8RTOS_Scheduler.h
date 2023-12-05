@@ -17,30 +17,19 @@
 /*************************************Defines***************************************/
 
 /* Status Register with the Thumb-bit Set */
-#define THUMBBIT            0x01000000
+#define THUMBBIT 0x01000000
 
-#define MAX_THREADS         5
-#define MAX_PTHREADS        2
-#define STACKSIZE           1024
-#define OSINT_PRIORITY      7
+#define MAX_THREADS 3
+#define MAX_PTHREADS 2
+#define STACKSIZE 1024
+#define OSINT_PRIORITY 7
 
 /*************************************Defines***************************************/
 
 /******************************Data Type Definitions********************************/
 
 // Scheduler error typedef
-typedef enum
-{
-    NO_ERROR = 0,
-    THREAD_LIMIT_REACHED = -1,
-    NO_THREADS_SCHEDULED = -2,
-    THREADS_INCORRECTLY_ALIVE = -3,
-    THREAD_DOES_NOT_EXIST = -4,
-    CANNOT_KILL_LAST_THREAD = -5,
-    IRQn_INVALID = -6,
-    HWI_PRIORITY_INVALID = -7,
-    INVALID_ID = -8
-} sched_ErrCode_t;
+typedef enum { NO_ERROR = 0, THREAD_LIMIT_REACHED = -1, NO_THREADS_SCHEDULED = -2, THREADS_INCORRECTLY_ALIVE = -3, THREAD_DOES_NOT_EXIST = -4, CANNOT_KILL_LAST_THREAD = -5, IRQn_INVALID = -6, HWI_PRIORITY_INVALID = -7, INVALID_ID = -8 } sched_ErrCode_t;
 
 /******************************Data Type Definitions********************************/
 
@@ -64,8 +53,7 @@ void G8RTOS_Init(void (*idleThread)(void));
 void EmptyThreadWait(void);
 int32_t G8RTOS_Launch(void);
 void G8RTOS_Scheduler();
-sched_ErrCode_t G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t threadPriority, char name[32],
-                                 uint16_t threadID);
+sched_ErrCode_t G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t threadPriority, char name[32], uint16_t threadID);
 void SysTick_Handler();
 void G8RTOS_Sleep(uint32_t duration);
 void G8RTOS_Yield();
@@ -74,13 +62,10 @@ bool isValidThread(tcb_t *thread);
 void G8RTOS_KillThread(uint16_t threadID);
 void G8RTOS_KillSelf();
 
-sched_ErrCode_t G8RTOS_AddAperiodicEvent(void (*threadToAdd)(void), uint8_t threadPriority,
-                                         int32_t IRQn);
+sched_ErrCode_t G8RTOS_AddAperiodicEvent(void (*threadToAdd)(void), uint8_t threadPriority, int32_t IRQn);
 
-sched_ErrCode_t G8RTOS_Add_PeriodicEvent(void (*threadToAdd)(void), uint32_t period,
-                                         uint32_t execution);
+sched_ErrCode_t G8RTOS_Add_PeriodicEvent(void (*threadToAdd)(void), uint32_t period, uint32_t execution);
 
 /********************************Public Functions***********************************/
 
 #endif /* G8RTOS_SCHEDULER_H_ */
-
