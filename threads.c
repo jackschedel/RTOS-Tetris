@@ -71,6 +71,7 @@ void FallingBlock_Thread()
 
     uint8_t piecePlaced = 0;
     uint8_t needsMove = 1;
+    uint8_t instaDrop = 0;
 
     ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF - 1,
     FRAME_X_OFF + BLOCK_SIZE * COLS + 1,
@@ -104,6 +105,12 @@ void FallingBlock_Thread()
         uint8_t move = G8RTOS_ReadFIFO(0);
 
         needsMove = 1;
+        instaDrop = 0;
+        if (move == 5)
+        {
+            move = 3;
+            instaDrop = 1;
+        }
         if (move == 1)
         {
             if (blockX > 0)
@@ -488,6 +495,10 @@ void FallingBlock_Thread()
 
             // todo clear FIFO bc fastdrop
         }
+        else if (instaDrop)
+        {
+            G8RTOS_WriteFIFO(0, 5);
+        }
 
         UARTprintf("\nX: %d\n", blockX);
         UARTprintf("Y: %d\n", blockY);
@@ -574,10 +585,7 @@ void Get_Input_P()
         if (drop_released)
         {
 
-            for (joy_i = 0; joy_i <= blockY; joy_i++)
-            {
-                G8RTOS_WriteFIFO(0, 3);
-            }
+            G8RTOS_WriteFIFO(0, 5);
             drop_released = false;
         }
     }
