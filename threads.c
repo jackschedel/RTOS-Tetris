@@ -40,7 +40,8 @@
 #define YELLOW 0x07FF
 #define LIGHT_BLUE 0xFFE0
 #define PURPLE 0xF813
-#define GRAY 0x632C
+#define DARK_GRAY 0x31A6
+#define GRAY 0xAD55
 
 #define START_X 3
 #define START_Y ROWS - 2
@@ -85,21 +86,21 @@ void Lost_Thread()
     {
         ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * i, FRAME_Y_OFF,
         FRAME_X_OFF + BLOCK_SIZE * i,
-                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, GRAY);
+                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, DARK_GRAY);
         ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * i - 1, FRAME_Y_OFF,
         FRAME_X_OFF + BLOCK_SIZE * i - 1,
-                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, GRAY);
+                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, DARK_GRAY);
     }
 
     for (uint8_t i = 1; i < ROWS; i++)
     {
         ST7789_DrawLine(FRAME_X_OFF, FRAME_Y_OFF + BLOCK_SIZE * i,
         FRAME_X_OFF + BLOCK_SIZE * COLS,
-                        FRAME_Y_OFF + BLOCK_SIZE * i, GRAY);
+                        FRAME_Y_OFF + BLOCK_SIZE * i, DARK_GRAY);
 
         ST7789_DrawLine(FRAME_X_OFF, FRAME_Y_OFF + BLOCK_SIZE * i,
         FRAME_X_OFF + BLOCK_SIZE * COLS,
-                        FRAME_Y_OFF + BLOCK_SIZE * i - 1, GRAY);
+                        FRAME_Y_OFF + BLOCK_SIZE * i - 1, DARK_GRAY);
     }
 }
 
@@ -133,21 +134,21 @@ void FallingBlock_Thread()
     {
         ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * i, FRAME_Y_OFF,
         FRAME_X_OFF + BLOCK_SIZE * i,
-                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, GRAY);
+                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, DARK_GRAY);
         ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * i - 1, FRAME_Y_OFF,
         FRAME_X_OFF + BLOCK_SIZE * i - 1,
-                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, GRAY);
+                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, DARK_GRAY);
     }
 
     for (uint8_t i = 1; i < ROWS; i++)
     {
         ST7789_DrawLine(FRAME_X_OFF, FRAME_Y_OFF + BLOCK_SIZE * i,
         FRAME_X_OFF + BLOCK_SIZE * COLS,
-                        FRAME_Y_OFF + BLOCK_SIZE * i, GRAY);
+                        FRAME_Y_OFF + BLOCK_SIZE * i, DARK_GRAY);
 
         ST7789_DrawLine(FRAME_X_OFF, FRAME_Y_OFF + BLOCK_SIZE * i,
         FRAME_X_OFF + BLOCK_SIZE * COLS,
-                        FRAME_Y_OFF + BLOCK_SIZE * i - 1, GRAY);
+                        FRAME_Y_OFF + BLOCK_SIZE * i - 1, DARK_GRAY);
     }
 
     // https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
