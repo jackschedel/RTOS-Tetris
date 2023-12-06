@@ -80,6 +80,27 @@ void Lost_Thread()
                          BLOCK_SIZE * ROWS - 1, 0);
     score = 0;
     resetting = 0;
+
+    for (uint8_t i = 1; i < COLS; i++)
+    {
+        ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * i, FRAME_Y_OFF,
+        FRAME_X_OFF + BLOCK_SIZE * i,
+                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, GRAY);
+        ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * i - 1, FRAME_Y_OFF,
+        FRAME_X_OFF + BLOCK_SIZE * i - 1,
+                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, GRAY);
+    }
+
+    for (uint8_t i = 1; i < ROWS; i++)
+    {
+        ST7789_DrawLine(FRAME_X_OFF, FRAME_Y_OFF + BLOCK_SIZE * i,
+        FRAME_X_OFF + BLOCK_SIZE * COLS,
+                        FRAME_Y_OFF + BLOCK_SIZE * i, GRAY);
+
+        ST7789_DrawLine(FRAME_X_OFF, FRAME_Y_OFF + BLOCK_SIZE * i,
+        FRAME_X_OFF + BLOCK_SIZE * COLS,
+                        FRAME_Y_OFF + BLOCK_SIZE * i - 1, GRAY);
+    }
 }
 
 void FallingBlock_Thread()
@@ -108,9 +129,25 @@ void FallingBlock_Thread()
     FRAME_X_OFF + BLOCK_SIZE * COLS + 1,
                     FRAME_Y_OFF + BLOCK_SIZE * ROWS + 1, 0xFFFF);
 
-    for (uint8_t i = 0; i < ROWS - 1; i++)
+    for (uint8_t i = 1; i < COLS; i++)
     {
-        // todo grid
+        ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * i, FRAME_Y_OFF,
+        FRAME_X_OFF + BLOCK_SIZE * i,
+                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, GRAY);
+        ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * i - 1, FRAME_Y_OFF,
+        FRAME_X_OFF + BLOCK_SIZE * i - 1,
+                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, GRAY);
+    }
+
+    for (uint8_t i = 1; i < ROWS; i++)
+    {
+        ST7789_DrawLine(FRAME_X_OFF, FRAME_Y_OFF + BLOCK_SIZE * i,
+        FRAME_X_OFF + BLOCK_SIZE * COLS,
+                        FRAME_Y_OFF + BLOCK_SIZE * i, GRAY);
+
+        ST7789_DrawLine(FRAME_X_OFF, FRAME_Y_OFF + BLOCK_SIZE * i,
+        FRAME_X_OFF + BLOCK_SIZE * COLS,
+                        FRAME_Y_OFF + BLOCK_SIZE * i - 1, GRAY);
     }
 
     // https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
