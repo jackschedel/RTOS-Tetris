@@ -50,6 +50,8 @@ uint8_t line_count = 1;
 uint8_t blockRotation = 1;
 int8_t blockY = START_Y;
 uint8_t resetting = 0;
+uint8_t timer = 0;
+uint32_t score = 0;
 
 unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
 
@@ -76,7 +78,7 @@ void Lost_Thread()
     ST7789_DrawRectangle(FRAME_X_OFF, FRAME_Y_OFF,
     BLOCK_SIZE * COLS - 1,
                          BLOCK_SIZE * ROWS - 1, 0);
-
+    score = 0;
     resetting = 0;
 }
 
@@ -105,6 +107,11 @@ void FallingBlock_Thread()
     ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * COLS + 1, FRAME_Y_OFF - 1,
     FRAME_X_OFF + BLOCK_SIZE * COLS + 1,
                     FRAME_Y_OFF + BLOCK_SIZE * ROWS + 1, 0xFFFF);
+
+    for (uint8_t i = 0; i < ROWS - 1; i++)
+    {
+        // todo grid
+    }
 
     // https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
     // 1x4 is 5, 2x2 is 6
@@ -474,6 +481,7 @@ void FallingBlock_Thread()
 
         if (piecePlaced)
         {
+            score += 400;
 
             if (curBlock == 6)
             {
@@ -520,9 +528,11 @@ void FallingBlock_Thread()
             G8RTOS_WriteFIFO(0, 5);
         }
 
-        UARTprintf("\nX: %d\n", blockX);
-        UARTprintf("Y: %d\n", blockY);
-        UARTprintf("Rotation: %d\n", blockRotation);
+        UARTprintf("\nTime: %d\n", timer);
+        //UARTprintf("X: %d\n", blockX);
+        //UARTprintf("Y: %d\n", blockY);
+        //UARTprintf("Rotation: %d\n", blockRotation);
+        UARTprintf("Score: %d\n", score);
 
     }
 }
@@ -621,6 +631,7 @@ void Get_Input_P()
 void Gravity_P()
 {
     G8RTOS_WriteFIFO(0, 3);
+    timer++;
     G8RTOS_Yield();
 }
 
