@@ -17,6 +17,7 @@
 semaphore_t sem_UART;
 semaphore_t sem_gameEnd;
 semaphore_t sem_clearLine;
+semaphore_t sem_lost;
 
 /***********************************Semaphores**************************************/
 
@@ -27,6 +28,7 @@ void Idle_Thread(void);
 void FallingBlock_Thread();
 void StaticBlocks_Thread();
 void DrawUI_Thread();
+void Lost_Thread();
 
 void Gravity_P();
 void Get_Input_P();

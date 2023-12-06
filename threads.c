@@ -49,6 +49,9 @@ uint8_t point_count = 0;
 uint8_t line_count = 1;
 uint8_t blockRotation = 1;
 int8_t blockY = START_Y;
+uint8_t resetting = 0;
+
+unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
 
 /*************************************Defines***************************************/
 
@@ -58,6 +61,23 @@ void Idle_Thread()
 {
     while (1)
         ;
+}
+
+uint8_t resetting_i = 0;
+void Lost_Thread()
+{
+    G8RTOS_WaitSemaphore(&sem_lost);
+
+    for (resetting_i = 0; resetting_i < BLOCKS_ARRAY_SIZE; resetting_i++)
+    {
+        static_blocks[resetting_i] = 0;
+    }
+
+    ST7789_DrawRectangle(FRAME_X_OFF, FRAME_Y_OFF,
+    BLOCK_SIZE * COLS - 1,
+                         BLOCK_SIZE * ROWS - 1, 0);
+
+    resetting = 0;
 }
 
 void FallingBlock_Thread()
@@ -604,8 +624,6 @@ void Gravity_P()
     G8RTOS_Yield();
 }
 
-unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
-
 void setStaticBlockBit(int col, int row, int value)
 {
     if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
@@ -615,6 +633,12 @@ void setStaticBlockBit(int col, int row, int value)
     int bitIndex = row * COLS + col;
     int byteIndex = bitIndex / BITS_PER_BYTE;
     int bitInByte = bitIndex % BITS_PER_BYTE;
+
+    if (((static_blocks[byteIndex] >> bitInByte) & 1) && !resetting)
+    {
+        G8RTOS_SignalSemaphore(&sem_lost);
+        resetting = 1;
+    }
 
     if (value)
         static_blocks[byteIndex] |= (1 << bitInByte);
