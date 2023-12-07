@@ -35,8 +35,8 @@
 #define JOYSTICK_DEADZONE 200
 #define NUM_SHAPES 7
 #define FRAME_X_OFF 30
-#define FRAME_Y_OFF 10
-#define BLOCK_SIZE 11
+#define FRAME_Y_OFF 65
+#define BLOCK_SIZE 9
 #define YELLOW 0x07FF
 #define LIGHT_BLUE 0xFFE0
 #define PURPLE 0xF813
@@ -82,7 +82,7 @@ void Lost_Thread()
     score = 0;
     resetting = 0;
 
-    renderCrosshatchGrid(0, 0);
+    renderCrosshatchGrid();
 }
 
 void FallingBlock_Thread()
@@ -111,7 +111,7 @@ void FallingBlock_Thread()
     FRAME_X_OFF + BLOCK_SIZE * COLS + 1,
                     FRAME_Y_OFF + BLOCK_SIZE * ROWS + 1, 0xFFFF);
 
-    renderCrosshatchGrid(0, 0);
+    renderCrosshatchGrid();
 
     // https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
     // 1x4 is 5, 2x2 is 6
@@ -529,8 +529,6 @@ void FallingBlock_Thread()
             G8RTOS_WriteFIFO(0, 5);
         }
 
-        renderCrosshatchGrid(0, 0);
-
         UARTprintf("\nTime: %d\n", timer);
         //UARTprintf("X: %d\n", blockX);
         //UARTprintf("Y: %d\n", blockY);
@@ -664,7 +662,7 @@ uint8_t getStaticBlockBit(int col, int row)
 {
     if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
     {
-        abort();
+        return 0;
     }
     int bitIndex = row * COLS + col;
     int byteIndex = bitIndex / BITS_PER_BYTE;
@@ -673,7 +671,7 @@ uint8_t getStaticBlockBit(int col, int row)
     return (static_blocks[byteIndex] >> bitInByte) & 1;
 }
 
-void renderCrosshatchGrid(int x, int y)
+void renderCrosshatchGrid()
 {
     for (uint8_t i = 1; i < COLS; i++)
     {
