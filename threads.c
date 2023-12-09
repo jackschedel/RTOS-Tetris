@@ -122,6 +122,7 @@ void FallingBlock_Thread()
     // 5 6 7
     unsigned char shapes[NUM_SHAPES - 2] = { 0b10011000, 0b00111000, 0b01110000, 0b01011000,
                                              0b11001000 };
+    G8RTOS_WriteFIFO(0, 0);
 
     while (true)
     {
@@ -133,6 +134,21 @@ void FallingBlock_Thread()
 
         needsMove = 1;
         instaDrop = 0;
+        reRenderBlock = 0;
+        if (move == 0)
+        {
+            if (curBlock == 5)
+            {
+                blockY += 1;
+            }
+            else if (curBlock == 6)
+            {
+                blockX += 1;
+            }
+
+            reRenderBlock = 1;
+        }
+
         if (move == 5)
         {
             move = 3;
@@ -223,8 +239,7 @@ void FallingBlock_Thread()
             }
             else if (move == 3)
             {
-                if (blockY < 0 || getStaticBlockBit(blockX, blockY)
-                        || getStaticBlockBit(blockX + 1, blockY))
+                if (getStaticBlockBit(blockX, blockY) || getStaticBlockBit(blockX + 1, blockY))
                 {
                     blockY++;
                     piecePlaced = 1;
@@ -241,7 +256,55 @@ void FallingBlock_Thread()
         {
             if (move == 4)
             {
-                // todo rotation collision
+                if (blockRotation == 2)
+                {
+
+                    if (getStaticBlockBit(blockX + 2, blockY - 2)
+                            || getStaticBlockBit(blockX + 2, blockY - 1)
+                            || getStaticBlockBit(blockX + 2, blockY)
+                            || getStaticBlockBit(blockX + 2, blockY + 1))
+                    {
+                        blockRotation--;
+                        needsMove = 0;
+
+                    }
+                }
+                else if (blockRotation == 4)
+                {
+                    if (getStaticBlockBit(blockX + 1, blockY - 1)
+                            || getStaticBlockBit(blockX + 1, blockY)
+                            || getStaticBlockBit(blockX + 1, blockY + 1)
+                            || getStaticBlockBit(blockX + 1, blockY + 2))
+                    {
+                        blockRotation--;
+                        needsMove = 0;
+
+                    }
+                }
+
+                else if (blockRotation == 3)
+                {
+                    if (getStaticBlockBit(blockX - 2, blockY + 1)
+                            || getStaticBlockBit(blockX - 1, blockY + 1)
+                            || getStaticBlockBit(blockX, blockY + 1)
+                            || getStaticBlockBit(blockX + 1, blockY + 1))
+                    {
+                        blockRotation--;
+                        needsMove = 0;
+                    }
+                }
+                else if (blockRotation == 1)
+                {
+                    if (getStaticBlockBit(blockX - 1, blockY + 2)
+                            || getStaticBlockBit(blockX, blockY + 2)
+                            || getStaticBlockBit(blockX + 1, blockY + 2)
+                            || getStaticBlockBit(blockX + 2, blockY + 2))
+                    {
+                        blockRotation--;
+                        needsMove = 0;
+                    }
+                }
+
             }
             else
 
@@ -324,7 +387,6 @@ void FallingBlock_Thread()
             }
         }
 
-        // others
         if (needsMove)
         {
             if (curBlock <= 4)
@@ -510,6 +572,7 @@ void FallingBlock_Thread()
         if (piecePlaced)
         {
             score += 400;
+            G8RTOS_WriteFIFO(0, 0);
 
             if (curBlock == 6)
             {
@@ -559,7 +622,6 @@ void FallingBlock_Thread()
 
             piecePlaced = 0;
 
-            // todo clear FIFO bc fastdrop
         }
         else if (instaDrop)
         {
@@ -720,7 +782,7 @@ uint8_t getStaticBlockBit(int col, int row)
 {
     if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
     {
-        return 0;
+        return 1;
     }
     int bitIndex = ((row + scrollingRow) % ROWS) * COLS + col;
     int byteIndex = bitIndex / BITS_PER_BYTE;
