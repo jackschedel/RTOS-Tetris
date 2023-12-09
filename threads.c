@@ -12,6 +12,7 @@
 #include <driverlib/uartstdio.h>
 #include "./G8RTOS/G8RTOS_Scheduler.h"
 #include "./G8RTOS/G8RTOS_IPC.h"
+#include "./G8RTOS/G8RTOS_CriticalSection.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -53,6 +54,7 @@ int8_t blockY = START_Y;
 uint8_t resetting = 0;
 uint8_t timer = 0;
 uint32_t score = 0;
+uint8_t level_num = 1;
 
 unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
 
@@ -69,20 +71,23 @@ void Idle_Thread()
 uint8_t resetting_i = 0;
 void Lost_Thread()
 {
-    G8RTOS_WaitSemaphore(&sem_lost);
-
-    for (resetting_i = 0; resetting_i < BLOCKS_ARRAY_SIZE; resetting_i++)
+    while (true)
     {
-        static_blocks[resetting_i] = 0;
+        G8RTOS_WaitSemaphore(&sem_lost);
+
+        for (resetting_i = 0; resetting_i < BLOCKS_ARRAY_SIZE; resetting_i++)
+        {
+            static_blocks[resetting_i] = 0;
+        }
+
+        ST7789_DrawRectangle(FRAME_X_OFF, FRAME_Y_OFF,
+        BLOCK_SIZE * COLS - 1,
+                             BLOCK_SIZE * ROWS - 1, 0);
+        score = 0;
+        resetting = 0;
+
+        renderCrosshatchGrid();
     }
-
-    ST7789_DrawRectangle(FRAME_X_OFF, FRAME_Y_OFF,
-    BLOCK_SIZE * COLS - 1,
-                         BLOCK_SIZE * ROWS - 1, 0);
-    score = 0;
-    resetting = 0;
-
-    renderCrosshatchGrid();
 }
 
 void FallingBlock_Thread()
@@ -150,6 +155,7 @@ void FallingBlock_Thread()
         {
             move = 3;
             instaDrop = 1;
+            score += 2;
         }
         if (move == 1)
         {
@@ -565,10 +571,9 @@ void FallingBlock_Thread()
                 }
             }
         }
-
+        int32_t IBit_State = StartCriticalSection();
         if (piecePlaced)
         {
-            score += 400;
             G8RTOS_WriteFIFO(0, 0);
 
             if (curBlock == 6)
@@ -578,8 +583,7 @@ void FallingBlock_Thread()
                 setStaticBlockBit(blockX + 1, blockY, 1);
                 setStaticBlockBit(blockX + 1, blockY + 1, 1);
 
-                staticCheckClear(blockY);
-                staticCheckClear(blockY + 1);
+                checkClear(blockY, 1);
 
             }
             else if (curBlock == 5)
@@ -591,10 +595,8 @@ void FallingBlock_Thread()
                     setStaticBlockBit(blockX, blockY + 2, 1);
                     setStaticBlockBit(blockX, blockY + 3, 1);
 
-                    staticCheckClear(blockY);
-                    staticCheckClear(blockY + 1);
-                    staticCheckClear(blockY + 2);
-                    staticCheckClear(blockY + 3);
+                    checkClear(blockY, 3);
+
                 }
                 else
                 {
@@ -603,7 +605,7 @@ void FallingBlock_Thread()
                     setStaticBlockBit(blockX + 2, blockY, 1);
                     setStaticBlockBit(blockX + 3, blockY, 1);
 
-                    staticCheckClear(blockY);
+                    checkClear(blockY, 0);
 
                 }
             }
@@ -630,7 +632,7 @@ void FallingBlock_Thread()
         //UARTprintf("Y: %d\n", blockY);
         //UARTprintf("Rotation: %d\n", blockRotation);
         UARTprintf("Score: %d\n", score);
-
+        EndCriticalSection(IBit_State);
     }
 }
 
@@ -638,6 +640,8 @@ void StaticBlocks_Thread()
 {
     while (true)
     {
+        G8RTOS_WaitSemaphore(&sem_clearLine);
+        UARTprintf("\nRerender time!\n");
 
     }
 
@@ -650,7 +654,6 @@ void DrawUI_Thread()
     while (true)
     {
         ST7789_Fill(0);
-
     }
 }
 
@@ -687,6 +690,7 @@ void Get_Input_P()
     {
         G8RTOS_WriteFIFO(0, 3);
         joy_released = 0;
+        score += 1;
     }
 
     uint8_t buttons = MultimodButtons_Get();
@@ -732,8 +736,43 @@ void Gravity_P()
     G8RTOS_Yield();
 }
 
-uint8_t scrollingRow = 0;
-uint8_t clear_i = 0;
+void checkClear(int row, int offsetMax)
+{
+    uint8_t totalCleared = 0;
+    for (uint8_t check_i = 0; check_i <= offsetMax; check_i++)
+    {
+        if (staticCheckClear(row + check_i))
+        {
+            for (uint8_t clear_i = 0; clear_i < COLS; clear_i++)
+            {
+                setStaticBlockBit(clear_i, row + check_i, 0);
+            }
+            totalCleared++;
+        }
+    }
+
+    if (totalCleared == 1)
+    {
+        score += 100 * level_num;
+    }
+    else if (totalCleared == 2)
+    {
+        score += 300 * level_num;
+    }
+    else if (totalCleared == 3)
+    {
+        score += 500 * level_num;
+    }
+    else if (totalCleared == 4)
+    {
+        score += 800 * level_num;
+    }
+
+    if (totalCleared)
+    {
+        G8RTOS_SignalSemaphore(&sem_clearLine);
+    }
+}
 
 uint8_t staticCheckClear(int row)
 {
@@ -741,15 +780,13 @@ uint8_t staticCheckClear(int row)
     {
         abort();
     }
-    for (clear_i = 0; clear_i < COLS; clear_i++)
+    for (uint8_t clear_i = 0; clear_i < COLS; clear_i++)
     {
-        if (!getStaticBlockBit(row, clear_i))
+        if (!getStaticBlockBit(clear_i, row))
         {
             return 0;
         }
     }
-    scrollingRow++;
-    UARTprintf("CLEAR!\n");
     return 1;
 }
 
@@ -757,13 +794,14 @@ void setStaticBlockBit(int col, int row, int value)
 {
     if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
     {
-        abort();
+        G8RTOS_SignalSemaphore(&sem_lost);
+        resetting = 1;
     }
-    int bitIndex = ((row + scrollingRow) % ROWS) * COLS + col;
+    int bitIndex = row * COLS + col;
     int byteIndex = bitIndex / BITS_PER_BYTE;
     int bitInByte = bitIndex % BITS_PER_BYTE;
 
-    if (((static_blocks[byteIndex] >> bitInByte) & 1) && !resetting)
+    if (value == 1 && ((static_blocks[byteIndex] >> bitInByte) & 1) && !resetting)
     {
         G8RTOS_SignalSemaphore(&sem_lost);
         resetting = 1;
@@ -781,7 +819,7 @@ uint8_t getStaticBlockBit(int col, int row)
     {
         return 1;
     }
-    int bitIndex = ((row + scrollingRow) % ROWS) * COLS + col;
+    int bitIndex = row * COLS + col;
     int byteIndex = bitIndex / BITS_PER_BYTE;
     int bitInByte = bitIndex % BITS_PER_BYTE;
 
