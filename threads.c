@@ -99,17 +99,17 @@ void FallingBlock_Thread()
     uint8_t instaDrop = 0;
 
     ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF - 1,
-    FRAME_X_OFF + BLOCK_SIZE * COLS + 1,
+    FRAME_X_OFF + BLOCK_SIZE * COLS,
                     FRAME_Y_OFF - 1, 0xFFFF);
     ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF - 1,
     FRAME_X_OFF - 1,
-                    FRAME_Y_OFF + BLOCK_SIZE * ROWS + 1, 0xFFFF);
-    ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF + BLOCK_SIZE * ROWS + 1,
-    FRAME_X_OFF + BLOCK_SIZE * COLS + 1,
-                    FRAME_Y_OFF + BLOCK_SIZE * ROWS + 1, 0xFFFF);
-    ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * COLS + 1, FRAME_Y_OFF - 1,
-    FRAME_X_OFF + BLOCK_SIZE * COLS + 1,
-                    FRAME_Y_OFF + BLOCK_SIZE * ROWS + 1, 0xFFFF);
+                    FRAME_Y_OFF + BLOCK_SIZE * ROWS, 0xFFFF);
+    ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF + BLOCK_SIZE * ROWS,
+    FRAME_X_OFF + BLOCK_SIZE * COLS,
+                    FRAME_Y_OFF + BLOCK_SIZE * ROWS, 0xFFFF);
+    ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * COLS, FRAME_Y_OFF - 1,
+    FRAME_X_OFF + BLOCK_SIZE * COLS,
+                    FRAME_Y_OFF + BLOCK_SIZE * ROWS, 0xFFFF);
 
     renderCrosshatchGrid();
 
@@ -137,11 +137,8 @@ void FallingBlock_Thread()
         reRenderBlock = 0;
         if (move == 0)
         {
-            if (curBlock == 5)
-            {
-                blockY += 1;
-            }
-            else if (curBlock == 6)
+
+            if (curBlock == 6)
             {
                 blockX += 1;
             }
@@ -797,20 +794,20 @@ void renderCrosshatchGrid()
     {
         ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * i, FRAME_Y_OFF,
         FRAME_X_OFF + BLOCK_SIZE * i,
-                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, DARK_GRAY);
+                        FRAME_Y_OFF + BLOCK_SIZE * ROWS - 1, DARK_GRAY);
         ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * i - 1, FRAME_Y_OFF,
         FRAME_X_OFF + BLOCK_SIZE * i - 1,
-                        FRAME_Y_OFF + BLOCK_SIZE * ROWS, DARK_GRAY);
+                        FRAME_Y_OFF + BLOCK_SIZE * ROWS - 1, DARK_GRAY);
     }
 
     for (uint8_t i = 1; i < ROWS; i++)
     {
         ST7789_DrawLine(FRAME_X_OFF, FRAME_Y_OFF + BLOCK_SIZE * i,
-        FRAME_X_OFF + BLOCK_SIZE * COLS,
+        FRAME_X_OFF + BLOCK_SIZE * COLS - 1,
                         FRAME_Y_OFF + BLOCK_SIZE * i, DARK_GRAY);
 
         ST7789_DrawLine(FRAME_X_OFF, FRAME_Y_OFF + BLOCK_SIZE * i,
-        FRAME_X_OFF + BLOCK_SIZE * COLS,
+        FRAME_X_OFF + BLOCK_SIZE * COLS - 1,
                         FRAME_Y_OFF + BLOCK_SIZE * i - 1, DARK_GRAY);
     }
 }
