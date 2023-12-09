@@ -239,6 +239,12 @@ void FallingBlock_Thread()
         }
         else if (curBlock == 5)
         {
+            if (move == 4)
+            {
+                // todo rotation collision
+            }
+            else
+
             if (blockRotation % 2 - 1)
             {
                 if (move == 1)
@@ -416,6 +422,17 @@ void FallingBlock_Thread()
                             ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
                             FRAME_Y_OFF + blockY * BLOCK_SIZE,
                                                  BLOCK_SIZE * 4, BLOCK_SIZE, 0);
+                            if (blockRotation == 2)
+                            {
+                                blockY -= 2;
+                                blockX += 2;
+                            }
+                            else if (blockRotation == 4)
+                            {
+                                blockY -= 1;
+                                blockX += 1;
+                            }
+
                         }
 
                         ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
@@ -449,6 +466,16 @@ void FallingBlock_Thread()
                             ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
                             FRAME_Y_OFF + blockY * BLOCK_SIZE,
                                                  BLOCK_SIZE, BLOCK_SIZE * 4, 0);
+                            if (blockRotation == 3)
+                            {
+                                blockY += 1;
+                                blockX -= 2;
+                            }
+                            else if (blockRotation == 1)
+                            {
+                                blockY += 2;
+                                blockX -= 1;
+                            }
                         }
 
                         ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
@@ -491,6 +518,9 @@ void FallingBlock_Thread()
                 setStaticBlockBit(blockX + 1, blockY, 1);
                 setStaticBlockBit(blockX + 1, blockY + 1, 1);
 
+                staticCheckClear(blockY);
+                staticCheckClear(blockY + 1);
+
             }
             else if (curBlock == 5)
             {
@@ -500,6 +530,11 @@ void FallingBlock_Thread()
                     setStaticBlockBit(blockX, blockY + 1, 1);
                     setStaticBlockBit(blockX, blockY + 2, 1);
                     setStaticBlockBit(blockX, blockY + 3, 1);
+
+                    staticCheckClear(blockY);
+                    staticCheckClear(blockY + 1);
+                    staticCheckClear(blockY + 2);
+                    staticCheckClear(blockY + 3);
                 }
                 else
                 {
@@ -507,6 +542,8 @@ void FallingBlock_Thread()
                     setStaticBlockBit(blockX + 1, blockY, 1);
                     setStaticBlockBit(blockX + 2, blockY, 1);
                     setStaticBlockBit(blockX + 3, blockY, 1);
+
+                    staticCheckClear(blockY);
 
                 }
             }
@@ -636,13 +673,34 @@ void Gravity_P()
     G8RTOS_Yield();
 }
 
+uint8_t scrollingRow = 0;
+uint8_t clear_i = 0;
+
+uint8_t staticCheckClear(int row)
+{
+    if (row < 0 || row >= ROWS)
+    {
+        abort();
+    }
+    for (clear_i = 0; clear_i < COLS; clear_i++)
+    {
+        if (!getStaticBlockBit(row, clear_i))
+        {
+            return 0;
+        }
+    }
+    scrollingRow++;
+    UARTprintf("CLEAR!\n");
+    return 1;
+}
+
 void setStaticBlockBit(int col, int row, int value)
 {
     if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
     {
         abort();
     }
-    int bitIndex = row * COLS + col;
+    int bitIndex = ((row + scrollingRow) % ROWS) * COLS + col;
     int byteIndex = bitIndex / BITS_PER_BYTE;
     int bitInByte = bitIndex % BITS_PER_BYTE;
 
@@ -664,7 +722,7 @@ uint8_t getStaticBlockBit(int col, int row)
     {
         return 0;
     }
-    int bitIndex = row * COLS + col;
+    int bitIndex = ((row + scrollingRow) % ROWS) * COLS + col;
     int byteIndex = bitIndex / BITS_PER_BYTE;
     int bitInByte = bitIndex % BITS_PER_BYTE;
 

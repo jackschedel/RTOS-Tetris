@@ -75,7 +75,7 @@ int main(void)
     //G8RTOS_AddThread(DrawUI_Thread, 250, "UI", 1);
 
     G8RTOS_Add_PeriodicEvent(Get_Input_P, 10, 50);
-    G8RTOS_Add_PeriodicEvent(Gravity_P, 800, 2);
+    //G8RTOS_Add_PeriodicEvent(Gravity_P, 800, 2);
 
     //JOYSTICK_IntEnable();
 

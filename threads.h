@@ -35,6 +35,8 @@ void Get_Input_P();
 
 void setStaticBlockBit(int row, int col, int value);
 uint8_t getStaticBlockBit(int row, int col);
+void renderCrosshatchGrid();
+uint8_t staticCheckClear(int row);
 
 /********************************Thread Functions***********************************/
 
