@@ -66,6 +66,7 @@ uint8_t point_count = 0;
 uint8_t line_count = 1;
 uint8_t blockRotation = 1;
 int8_t blockY = START_Y;
+int8_t blockX = START_X;
 uint8_t resetting = 0;
 uint8_t timer = 0;
 uint32_t score = 0;
@@ -101,6 +102,9 @@ void Lost_Thread()
         score = 0;
         resetting = 0;
 
+        blockY = START_Y;
+        blockX = START_X;
+
         renderCrosshatchGrid();
 
         G8RTOS_WriteFIFO(0, 0);
@@ -109,9 +113,6 @@ void Lost_Thread()
 
 void FallingBlock_Thread()
 {
-
-    int8_t blockX = START_X;
-
     uint8_t curBlock = 6;
 
     uint8_t reRenderBlock = 1;
@@ -225,6 +226,15 @@ void FallingBlock_Thread()
                 }
             }
 
+            if (curBlock == LINE && (blockRotation - 1) % 2)
+            {
+                // straight up-and-down
+                if (getStaticBlockBit(blockX, blockY + 3))
+                {
+                    reRenderBlock = 0;
+                }
+            }
+
         }
         else if (move == MOVE_RIGHT)
         {
@@ -250,7 +260,27 @@ void FallingBlock_Thread()
                 }
             }
 
+            if (curBlock == LINE)
+            {
+                if ((blockRotation - 1) % 2)
+                {
+                    // straight up-and-down
+                    if (getStaticBlockBit(blockX + 2, blockY + 3))
+                    {
+                        reRenderBlock = 0;
+                    }
+                }
+                else
+                {
+                    // horizontal
+                    if (getStaticBlockBit(blockX + 4, blockY + 1))
+                    {
+                        reRenderBlock = 0;
+                    }
+                }
+            }
         }
+
         else if (move == MOVE_DOWN)
         {
             curr = 0;
@@ -269,6 +299,18 @@ void FallingBlock_Thread()
                     }
 
                     if (blockAtPos && getStaticBlockBit(blockX + i, blockY + j - 1))
+                    {
+                        reRenderBlock = 0;
+                    }
+                }
+            }
+
+            if (curBlock == LINE)
+            {
+                if (blockRotation % 2)
+                {
+                    // horizontal
+                    if (getStaticBlockBit(blockX + 3, blockY))
                     {
                         reRenderBlock = 0;
                     }
@@ -301,6 +343,26 @@ void FallingBlock_Thread()
                                                  BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
                             setStaticBlockBit(blockX + i, blockY + j, 1, 1);
                         }
+                    }
+                }
+
+                if (curBlock == LINE)
+                {
+                    if ((blockRotation - 1) % 2)
+                    {
+                        // straight up-and-down
+                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                        FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
+                        setStaticBlockBit(blockX + 1, blockY + 3, 1, 1);
+                    }
+                    else
+                    {
+                        // horizontal
+                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
+                        FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
+                        setStaticBlockBit(blockX + 3, blockY + 1, 1, 1);
                     }
                 }
             }
@@ -484,6 +546,23 @@ void FallingBlock_Thread()
                     }
                 }
             }
+            if (curBlock == LINE)
+            {
+                if ((blockRotation - 1) % 2)
+                {
+                    // straight up-and-down
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                }
+                else
+                {
+                    // horizontal
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                }
+            }
 
             if (move == MOVE_LEFT)
             {
@@ -515,38 +594,63 @@ void FallingBlock_Thread()
             {
                 for (int8_t i = 0; i < 3; i++)
                 {
-                    if (i == 1 && j == 1)
+                    if (!resetting)
                     {
-                        blockAtPos = 1;
-                    }
-                    else
-                    {
-                        blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr) & 1;
-                        curr++;
-                    }
-
-                    if (blockAtPos)
-                    {
-                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
-                        FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
-                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[curBlock]);
-
-                        if (move == MOVE_NONE && getStaticBlockBit(blockX + i, blockY + j))
+                        if (i == 1 && j == 1)
                         {
-                            G8RTOS_SignalSemaphore(&sem_lost);
-                            resetting = 1;
+                            blockAtPos = 1;
+                        }
+                        else
+                        {
+                            blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
+                                    & 1;
+                            curr++;
+                        }
+
+                        if (blockAtPos)
+                        {
+                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
+                            FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[curBlock]);
+
+                            if (move == MOVE_NONE && getStaticBlockBit(blockX + i, blockY + j))
+                            {
+                                G8RTOS_SignalSemaphore(&sem_lost);
+                                resetting = 1;
+                            }
                         }
                     }
                 }
             }
+
+            if (curBlock == LINE)
+            {
+                if ((blockRotation - 1) % 2)
+                {
+                    // straight up-and-down
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[curBlock]);
+                }
+                else
+                {
+                    // horizontal
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[curBlock]);
+                }
+            }
+
         }
 
         if (piecePlaced)
         {
-            G8RTOS_WriteFIFO(0, 0);
-
-            G8RTOS_SignalSemaphore(&sem_clearLine);
-            G8RTOS_Yield();
+            if (!resetting)
+            {
+                G8RTOS_WriteFIFO(0, MOVE_NONE);
+                G8RTOS_SignalSemaphore(&sem_clearLine);
+                G8RTOS_Yield();
+            }
 
             curBlock++;
             blockRotation = 1;
@@ -565,9 +669,6 @@ void FallingBlock_Thread()
         }
 
         UARTprintf("\nTime: %d\n", timer);
-        //UARTprintf("X: %d\n", blockX);
-        //UARTprintf("Y: %d\n", blockY);
-        //UARTprintf("Rotation: %d\n", blockRotation);
         UARTprintf("Score: %d\n", score);
         G8RTOS_Yield();
     }
@@ -767,8 +868,7 @@ void setStaticBlockBit(int8_t col, int8_t row, int8_t value, uint8_t canLose)
 {
     if ((row < 0 || row >= ROWS || col < 0 || col >= COLS) && canLose)
     {
-        G8RTOS_SignalSemaphore(&sem_lost);
-        resetting = 1;
+        abort();
     }
     int bitIndex = row * COLS + col;
     int byteIndex = bitIndex / BITS_PER_BYTE;
@@ -776,8 +876,7 @@ void setStaticBlockBit(int8_t col, int8_t row, int8_t value, uint8_t canLose)
 
     if (value == 1 && ((static_blocks[byteIndex] >> bitInByte) & 1) && !resetting && canLose)
     {
-        G8RTOS_SignalSemaphore(&sem_lost);
-        resetting = 1;
+        abort();
     }
 
     if (value)
