@@ -54,6 +54,9 @@
 #define MOVE_ROTATE 4
 #define MOVE_INSTADROP 5
 
+#define STRAIGHT_UP blockRotation % 2 - 1
+#define HORIZONTAL 1
+
 #define LINE 5
 #define SQUARE 6
 
@@ -105,7 +108,7 @@ void Lost_Thread()
 void FallingBlock_Thread()
 {
 
-    uint8_t blockX = START_X;
+    int8_t blockX = START_X;
 
     uint8_t curBlock = 5;
 
@@ -178,66 +181,25 @@ void FallingBlock_Thread()
         }
         if (move == MOVE_LEFT)
         {
-            if (blockX > 0)
-            {
-                blockX--;
-            }
-            else
-            {
-                move = 0;
-            }
+            blockX--;
         }
-        else
+        else if (move == MOVE_RIGHT)
         {
-
-            uint8_t dims = 0;
-
-            if (curBlock <= 4)
-            {
-                dims = 0b00110010;
-            }
-            else if (curBlock == LINE)
-            {
-                dims = 0b01000001;
-            }
-            else if (curBlock == SQUARE)
-            {
-                dims = 0b00100010;
-            }
-
-            uint8_t curWidth = dims >> 4 * (blockRotation % 2) & 15;
-
-            if (move == MOVE_RIGHT)
-            {
-                if (blockX + curWidth < COLS)
-                {
-                    blockX++;
-                }
-                else
-                {
-                    move = 0;
-                }
-            }
-            else if (move == MOVE_DOWN)
-            {
-
-                blockY--;
-
-            }
-            else if (move == MOVE_ROTATE)
-            {
-                if (curBlock != 6)
-                {
-                    reRenderBlock = 1;
-                }
-            }
+            blockX++;
         }
-
-        if (curBlock <= 4)
+        else if (move == MOVE_DOWN)
         {
-            // todo check collision on others
+            blockY--;
         }
-        else if (curBlock == SQUARE)
+        else if (move == MOVE_ROTATE)
+        {
+            if (curBlock != 6)
+            {
+                reRenderBlock = 1;
+            }
+        }
+
+        if (curBlock == SQUARE)
         {
             if (move == MOVE_LEFT)
             {
@@ -447,7 +409,7 @@ void FallingBlock_Thread()
                     }
                 }
             }
-            else if (blockRotation % 2 - 1)
+            else if (STRAIGHT_UP)
             {
                 if (move == MOVE_LEFT)
                 {
@@ -497,7 +459,7 @@ void FallingBlock_Thread()
                     }
                 }
             }
-            else
+            else if (HORIZONTAL)
             {
                 if (move == MOVE_LEFT)
                 {
@@ -510,7 +472,7 @@ void FallingBlock_Thread()
                 }
                 else if (move == MOVE_RIGHT)
                 {
-                    if (getStaticBlockBit(blockX, blockY))
+                    if (getStaticBlockBit(blockX + 3, blockY))
                     {
                         blockX--;
                         needsMove = 0;
@@ -551,42 +513,7 @@ void FallingBlock_Thread()
 
         if (needsMove)
         {
-
-            // temp purple rectangle
-            if (curBlock <= 4)
-            {
-                if (move == MOVE_LEFT)
-                {
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                         BLOCK_SIZE * 3, BLOCK_SIZE * 3, 0);
-
-                }
-                else if (move == MOVE_RIGHT)
-                {
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX - 1) * BLOCK_SIZE,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                         BLOCK_SIZE * 3, BLOCK_SIZE * 3, 0);
-                }
-                else if (move == MOVE_DOWN)
-                {
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE,
-                                         BLOCK_SIZE * 3, BLOCK_SIZE * 3, 0);
-                }
-                else if (move == MOVE_ROTATE)
-                {
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                         BLOCK_SIZE * 3, BLOCK_SIZE * 3, 0);
-                }
-
-                ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                     BLOCK_SIZE * 3, BLOCK_SIZE * 3, PURPLE);
-            }
-            //  2x2
-            else if (curBlock == SQUARE)
+            if (curBlock == SQUARE)
             {
                 if (reRenderBlock)
                 {
@@ -665,8 +592,7 @@ void FallingBlock_Thread()
             // 1x4
             else if (curBlock == LINE)
             {
-                // straight up
-                if (blockRotation % 2 - 1)
+                if (STRAIGHT_UP)
                 {
                     if (reRenderBlock || move != 3)
                     {
@@ -761,7 +687,7 @@ void FallingBlock_Thread()
                     }
 
                 }
-                else
+                else if (HORIZONTAL)
                 {
                     if (reRenderBlock || move == MOVE_DOWN)
                     {
@@ -869,14 +795,14 @@ void FallingBlock_Thread()
             }
             else if (curBlock == LINE)
             {
-                if (blockRotation % 2 - 1)
+                if (STRAIGHT_UP)
                 {
                     setStaticBlockBit(blockX, blockY, 1, 1);
                     setStaticBlockBit(blockX, blockY + 1, 1, 1);
                     setStaticBlockBit(blockX, blockY + 2, 1, 1);
                     setStaticBlockBit(blockX, blockY + 3, 1, 1);
                 }
-                else
+                else if (HORIZONTAL)
                 {
                     setStaticBlockBit(blockX, blockY, 1, 1);
                     setStaticBlockBit(blockX + 1, blockY, 1, 1);
