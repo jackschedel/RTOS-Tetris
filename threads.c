@@ -33,7 +33,7 @@
 #define BLOCKS_ARRAY_SIZE ((ROWS * COLS + 7) / 8)
 #define BITS_PER_BYTE 8
 #define JOYSTICK_MIDPOINT 2100
-#define JOYSTICK_DEADZONE 200
+#define JOYSTICK_DEADZONE 500
 #define NUM_SHAPES 7
 #define FRAME_X_OFF 30
 #define FRAME_Y_OFF 65
@@ -59,6 +59,11 @@
 
 #define LINE 5
 #define SQUARE 6
+
+#define ROT_1 blockRotation == 1
+#define ROT_2 blockRotation == 2
+#define ROT_3 blockRotation == 3
+#define ROT_4 blockRotation == 4
 
 uint8_t point_count = 0;
 uint8_t line_count = 1;
@@ -175,21 +180,9 @@ void FallingBlock_Thread()
 
         if (move == MOVE_INSTADROP)
         {
-            move = 3;
+            move = MOVE_DOWN;
             instaDrop = 1;
             score += 2;
-        }
-        if (move == MOVE_LEFT)
-        {
-            blockX--;
-        }
-        else if (move == MOVE_RIGHT)
-        {
-            blockX++;
-        }
-        else if (move == MOVE_DOWN)
-        {
-            blockY--;
         }
         else if (move == MOVE_ROTATE)
         {
@@ -203,29 +196,34 @@ void FallingBlock_Thread()
         {
             if (move == MOVE_LEFT)
             {
-                if (getStaticBlockBit(blockX, blockY) || getStaticBlockBit(blockX, blockY + 1))
+                if (getStaticBlockBit(blockX - 1, blockY)
+                        || getStaticBlockBit(blockX - 1, blockY + 1))
                 {
-                    blockX++;
                     needsMove = 0;
-
+                }
+                else
+                {
+                    blockX--;
                 }
             }
             else if (move == MOVE_RIGHT)
             {
-                if (getStaticBlockBit(blockX + 1, blockY)
-                        || getStaticBlockBit(blockX + 1, blockY + 1))
+                if (getStaticBlockBit(blockX + 2, blockY)
+                        || getStaticBlockBit(blockX + 2, blockY + 1))
                 {
-                    blockX--;
                     needsMove = 0;
-
+                }
+                else
+                {
+                    blockX++;
                 }
 
             }
             else if (move == MOVE_DOWN)
             {
-                if (getStaticBlockBit(blockX, blockY) || getStaticBlockBit(blockX + 1, blockY))
+                if (getStaticBlockBit(blockX, blockY - 1)
+                        || getStaticBlockBit(blockX + 1, blockY - 1))
                 {
-                    blockY++;
                     piecePlaced = 1;
                     needsMove = 0;
 
@@ -245,6 +243,10 @@ void FallingBlock_Thread()
                     FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
                                          BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
                 }
+                else
+                {
+                    blockY--;
+                }
             }
 
         }
@@ -252,7 +254,7 @@ void FallingBlock_Thread()
         {
             if (move == MOVE_ROTATE)
             {
-                if (blockRotation == 2)
+                if (ROT_2)
                 {
                     if (getStaticBlockBit(blockX + 2, blockY - 2)
                             || getStaticBlockBit(blockX + 2, blockY - 1)
@@ -291,7 +293,7 @@ void FallingBlock_Thread()
 
                     }
                 }
-                else if (blockRotation == 4)
+                else if (ROT_4)
                 {
                     if (getStaticBlockBit(blockX + 1, blockY - 1)
                             || getStaticBlockBit(blockX + 1, blockY)
@@ -330,7 +332,7 @@ void FallingBlock_Thread()
 
                     }
                 }
-                else if (blockRotation == 3)
+                else if (ROT_3)
                 {
                     if (getStaticBlockBit(blockX - 2, blockY + 1)
                             || getStaticBlockBit(blockX - 1, blockY + 1)
@@ -369,7 +371,7 @@ void FallingBlock_Thread()
 
                     }
                 }
-                else if (blockRotation == 1)
+                else if (ROT_1)
                 {
                     if (getStaticBlockBit(blockX - 1, blockY + 2)
                             || getStaticBlockBit(blockX, blockY + 2)
@@ -413,32 +415,37 @@ void FallingBlock_Thread()
             {
                 if (move == MOVE_LEFT)
                 {
-                    if (getStaticBlockBit(blockX, blockY) || getStaticBlockBit(blockX, blockY + 1)
-                            || getStaticBlockBit(blockX, blockY + 2)
-                            || getStaticBlockBit(blockX, blockY + 3))
+                    if (getStaticBlockBit(blockX - 1, blockY)
+                            || getStaticBlockBit(blockX - 1, blockY + 1)
+                            || getStaticBlockBit(blockX - 1, blockY + 2)
+                            || getStaticBlockBit(blockX - 1, blockY + 3))
                     {
-                        blockX++;
                         needsMove = 0;
-
+                    }
+                    else
+                    {
+                        blockX--;
                     }
                 }
                 else if (move == MOVE_RIGHT)
                 {
-                    if (getStaticBlockBit(blockX, blockY) || getStaticBlockBit(blockX, blockY + 1)
-                            || getStaticBlockBit(blockX, blockY + 2)
-                            || getStaticBlockBit(blockX, blockY + 3))
+                    if (getStaticBlockBit(blockX + 1, blockY)
+                            || getStaticBlockBit(blockX + 1, blockY + 1)
+                            || getStaticBlockBit(blockX + 1, blockY + 2)
+                            || getStaticBlockBit(blockX + 1, blockY + 3))
                     {
-                        blockX--;
                         needsMove = 0;
-
+                    }
+                    else
+                    {
+                        blockX++;
                     }
 
                 }
                 else if (move == MOVE_DOWN)
                 {
-                    if (blockY < 0 || getStaticBlockBit(blockX, blockY) || blockY < 0)
+                    if (blockY < 0 || getStaticBlockBit(blockX, blockY - 1) || blockY <= 0)
                     {
-                        blockY++;
                         needsMove = 0;
 
                         piecePlaced = 1;
@@ -457,37 +464,43 @@ void FallingBlock_Thread()
                         FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
                     }
+                    else
+                    {
+                        blockY--;
+                    }
                 }
             }
             else if (HORIZONTAL)
             {
                 if (move == MOVE_LEFT)
                 {
-                    if (getStaticBlockBit(blockX, blockY))
+                    if (getStaticBlockBit(blockX - 1, blockY))
                     {
-                        blockX++;
                         needsMove = 0;
-
+                    }
+                    else
+                    {
+                        blockX--;
                     }
                 }
                 else if (move == MOVE_RIGHT)
                 {
-                    if (getStaticBlockBit(blockX + 3, blockY))
+                    if (getStaticBlockBit(blockX + 4, blockY))
                     {
-                        blockX--;
                         needsMove = 0;
-
                     }
-
+                    else
+                    {
+                        blockX++;
+                    }
                 }
                 else if (move == MOVE_DOWN)
                 {
-                    if (blockY < 0 || getStaticBlockBit(blockX, blockY)
-                            || getStaticBlockBit(blockX + 1, blockY)
-                            || getStaticBlockBit(blockX + 2, blockY)
-                            || getStaticBlockBit(blockX + 3, blockY))
+                    if (blockY <= 0 || getStaticBlockBit(blockX, blockY - 1)
+                            || getStaticBlockBit(blockX + 1, blockY - 1)
+                            || getStaticBlockBit(blockX + 2, blockY - 1)
+                            || getStaticBlockBit(blockX + 3, blockY - 1))
                     {
-                        blockY++;
                         piecePlaced = 1;
                         needsMove = 0;
 
@@ -506,6 +519,10 @@ void FallingBlock_Thread()
                         ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
+                    }
+                    else
+                    {
+                        blockY--;
                     }
                 }
             }
@@ -646,12 +663,12 @@ void FallingBlock_Thread()
                             ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
                             FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
                                                  BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
-                            if (blockRotation == 2)
+                            if (ROT_2)
                             {
                                 blockY -= 2;
                                 blockX += 2;
                             }
-                            else if (blockRotation == 4)
+                            else if (ROT_4)
                             {
                                 blockY -= 1;
                                 blockX += 1;
@@ -727,12 +744,12 @@ void FallingBlock_Thread()
                             FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
                                                  BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
 
-                            if (blockRotation == 3)
+                            if (ROT_3)
                             {
                                 blockY += 1;
                                 blockX -= 2;
                             }
-                            else if (blockRotation == 1)
+                            else if (ROT_1)
                             {
                                 blockY += 2;
                                 blockX -= 1;
