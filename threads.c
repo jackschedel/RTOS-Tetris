@@ -57,10 +57,7 @@
 #define SQUARE 6
 #define LINE 6
 
-#define ROT_1 blockRotation == 1
-#define ROT_2 blockRotation == 2
-#define ROT_3 blockRotation == 3
-#define ROT_4 blockRotation == 4
+#define ROT_VERTICAL (blockRotation - 1) % 2
 
 uint8_t point_count = 0;
 uint8_t line_count = 1;
@@ -118,7 +115,6 @@ void FallingBlock_Thread()
     uint8_t reRenderBlock = 1;
 
     uint8_t piecePlaced = 0;
-    uint8_t needsMove = 1;
     uint8_t instaDrop = 0;
 
     int8_t wallKick = 0;
@@ -170,7 +166,6 @@ void FallingBlock_Thread()
         if (resetting)
             continue;
 
-        needsMove = 1;
         instaDrop = 0;
         reRenderBlock = 0;
         wallKick = 0;
@@ -226,9 +221,9 @@ void FallingBlock_Thread()
                 }
             }
 
-            if (curBlock == LINE && (blockRotation - 1) % 2)
+            if (curBlock == LINE && ROT_VERTICAL)
             {
-                // straight up-and-down
+
                 if (getStaticBlockBit(blockX, blockY + 3))
                 {
                     reRenderBlock = 0;
@@ -262,9 +257,9 @@ void FallingBlock_Thread()
 
             if (curBlock == LINE)
             {
-                if ((blockRotation - 1) % 2)
+                if (ROT_VERTICAL)
                 {
-                    // straight up-and-down
+
                     if (getStaticBlockBit(blockX + 2, blockY + 3))
                     {
                         reRenderBlock = 0;
@@ -272,7 +267,7 @@ void FallingBlock_Thread()
                 }
                 else
                 {
-                    // horizontal
+
                     if (getStaticBlockBit(blockX + 4, blockY + 1))
                     {
                         reRenderBlock = 0;
@@ -309,7 +304,7 @@ void FallingBlock_Thread()
             {
                 if (blockRotation % 2)
                 {
-                    // horizontal
+
                     if (getStaticBlockBit(blockX + 3, blockY))
                     {
                         reRenderBlock = 0;
@@ -348,9 +343,9 @@ void FallingBlock_Thread()
 
                 if (curBlock == LINE)
                 {
-                    if ((blockRotation - 1) % 2)
+                    if (ROT_VERTICAL)
                     {
-                        // straight up-and-down
+
                         ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
@@ -358,7 +353,7 @@ void FallingBlock_Thread()
                     }
                     else
                     {
-                        // horizontal
+
                         ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
@@ -394,6 +389,25 @@ void FallingBlock_Thread()
                     }
                 }
             }
+            if (curBlock == LINE)
+            {
+                if (ROT_VERTICAL)
+                {
+
+                    if (getStaticBlockBit(blockX + 1, blockY + 3))
+                    {
+                        reRenderBlock = 0;
+                    }
+                }
+                else
+                {
+
+                    if (getStaticBlockBit(blockX + 3, blockY + 1))
+                    {
+                        reRenderBlock = 0;
+                    }
+                }
+            }
 
             if (!reRenderBlock)
             {
@@ -424,6 +438,26 @@ void FallingBlock_Thread()
                         }
                     }
                 }
+                if (curBlock == LINE)
+                {
+                    if (ROT_VERTICAL)
+                    {
+
+                        if (getStaticBlockBit(blockX + 1, blockY + 3))
+                        {
+                            reRenderBlock = 0;
+                        }
+                    }
+                    else
+                    {
+
+                        if (getStaticBlockBit(blockX + 3, blockY + 1))
+                        {
+                            reRenderBlock = 0;
+                        }
+                    }
+                }
+
                 if (reRenderBlock)
                 {
                     wallKick = -1;
@@ -457,6 +491,25 @@ void FallingBlock_Thread()
                             {
                                 reRenderBlock = 0;
                             }
+                        }
+                    }
+                }
+                if (curBlock == LINE)
+                {
+                    if (ROT_VERTICAL)
+                    {
+
+                        if (getStaticBlockBit(blockX + 1, blockY + 3))
+                        {
+                            reRenderBlock = 0;
+                        }
+                    }
+                    else
+                    {
+
+                        if (getStaticBlockBit(blockX + 3, blockY + 1))
+                        {
+                            reRenderBlock = 0;
                         }
                     }
                 }
@@ -513,6 +566,37 @@ void FallingBlock_Thread()
                         }
                     }
                 }
+                if (curBlock == LINE)
+                {
+                    if (ROT_VERTICAL)
+                    {
+                        ST7789_DrawRectangle(
+                        FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
+                                             FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2,
+                                             BLOCK_SIZE - 2, 0);
+
+                        ST7789_DrawRectangle(
+                        FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                                             FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2,
+                                             BLOCK_SIZE - 2, colors[curBlock]);
+                    }
+                    else
+                    {
+                        ST7789_DrawRectangle(
+                        FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                                             FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2,
+                                             BLOCK_SIZE - 2, 0);
+
+                        ST7789_DrawRectangle(
+                        FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
+                                             FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2,
+                                             BLOCK_SIZE - 2, colors[curBlock]);
+                    }
+                }
                 reRenderBlock = 0;
             }
         }
@@ -545,22 +629,22 @@ void FallingBlock_Thread()
                         }
                     }
                 }
-            }
-            if (curBlock == LINE)
-            {
-                if ((blockRotation - 1) % 2)
+                if (curBlock == LINE)
                 {
-                    // straight up-and-down
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
-                }
-                else
-                {
-                    // horizontal
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                    if (ROT_VERTICAL)
+                    {
+
+                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                        FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                    }
+                    else
+                    {
+
+                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
+                        FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                    }
                 }
             }
 
@@ -625,16 +709,16 @@ void FallingBlock_Thread()
 
             if (curBlock == LINE)
             {
-                if ((blockRotation - 1) % 2)
+                if (ROT_VERTICAL)
                 {
-                    // straight up-and-down
+
                     ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
                     FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
                                          BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[curBlock]);
                 }
                 else
                 {
-                    // horizontal
+
                     ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
                     FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
                                          BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[curBlock]);
