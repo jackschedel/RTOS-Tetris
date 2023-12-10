@@ -150,7 +150,7 @@ void FallingBlock_Thread()
     // 5 6 7
     unsigned char shapes[4][NUM_SHAPES - 2] = { { 0b10011000, 0b00111000, 0b01110000, 0b01011000,
                                                   0b11001000 },
-                                                { 0b01100010, 0b01000011, 0b010001001, 0b01001010,
+                                                { 0b01100010, 0b01000011, 0b01001001, 0b01001010,
                                                   0b00101010 },
                                                 { 0b00011001, 0b00011100, 0b00001110, 0b00011010,
                                                   0b00010011 },
@@ -188,10 +188,11 @@ void FallingBlock_Thread()
 
         if (curBlock <= 4)
         {
-            curr = 0;
+            reRenderBlock = 1;
 
-            if (move == MOVE_NONE)
+            if (move == MOVE_LEFT)
             {
+                curr = 0;
                 for (int8_t j = 2; j >= 0; j--)
                 {
                     for (int8_t i = 0; i < 3; i++)
@@ -207,16 +208,90 @@ void FallingBlock_Thread()
                             curr++;
                         }
 
-                        if (blockAtPos)
+                        if (blockAtPos && getStaticBlockBit(blockX + i - 1, blockY + j))
                         {
-                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
-                            FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
-                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, PURPLE);
+                            reRenderBlock = 0;
+                        }
+                    }
+                }
 
-                            if (getStaticBlockBit(blockX + i, blockY + j))
+            }
+            else if (move == MOVE_RIGHT)
+            {
+                curr = 0;
+                for (int8_t j = 2; j >= 0; j--)
+                {
+                    for (int8_t i = 0; i < 3; i++)
+                    {
+                        if (i == 1 && j == 1)
+                        {
+                            blockAtPos = 1;
+                        }
+                        else
+                        {
+                            blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
+                                    & 1;
+                            curr++;
+                        }
+
+                        if (blockAtPos && getStaticBlockBit(blockX + i + 1, blockY + j))
+                        {
+                            reRenderBlock = 0;
+                        }
+                    }
+                }
+
+            }
+            else if (move == MOVE_DOWN)
+            {
+                curr = 0;
+                for (int8_t j = 2; j >= 0; j--)
+                {
+                    for (int8_t i = 0; i < 3; i++)
+                    {
+                        if (i == 1 && j == 1)
+                        {
+                            blockAtPos = 1;
+                        }
+                        else
+                        {
+                            blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
+                                    & 1;
+                            curr++;
+                        }
+
+                        if (blockAtPos && getStaticBlockBit(blockX + i, blockY + j - 1))
+                        {
+                            reRenderBlock = 0;
+                        }
+                    }
+                }
+
+                if (!reRenderBlock)
+                {
+                    piecePlaced = 1;
+                    curr = 0;
+                    for (int8_t j = 2; j >= 0; j--)
+                    {
+                        for (int8_t i = 0; i < 3; i++)
+                        {
+                            if (i == 1 && j == 1)
                             {
-                                G8RTOS_SignalSemaphore(&sem_lost);
-                                resetting = 1;
+                                blockAtPos = 1;
+                            }
+                            else
+                            {
+                                blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
+                                        & 1;
+                                curr++;
+                            }
+
+                            if (blockAtPos)
+                            {
+                                ST7789_DrawRectangle(FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
+                                FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
+                                                     BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
+                                setStaticBlockBit(blockX + i, blockY + j, 1, 1);
                             }
                         }
                     }
@@ -224,6 +299,10 @@ void FallingBlock_Thread()
             }
             else if (move == MOVE_ROTATE)
             {
+                reRenderBlock = 0;
+
+                // todo check if can rotate + check wallBounce
+                curr = 0;
                 for (int8_t j = 2; j >= 0; j--)
                 {
                     for (int8_t i = 0; i < 3; i++)
@@ -250,6 +329,81 @@ void FallingBlock_Thread()
                                 ST7789_DrawRectangle(FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
                                 FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
                                                      BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (reRenderBlock)
+            {
+                if (move != MOVE_NONE)
+                {
+                    curr = 0;
+                    for (int8_t j = 2; j >= 0; j--)
+                    {
+                        for (int8_t i = 0; i < 3; i++)
+                        {
+                            if (i == 1 && j == 1)
+                            {
+                                blockAtPos = 1;
+                            }
+                            else
+                            {
+                                blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
+                                        & 1;
+                                curr++;
+                            }
+
+                            if (blockAtPos)
+                            {
+                                ST7789_DrawRectangle(FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
+                                FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
+                                                     BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                            }
+                        }
+                    }
+                }
+
+                if (move == MOVE_LEFT)
+                {
+                    blockX--;
+                }
+                else if (move == MOVE_RIGHT)
+                {
+                    blockX++;
+                }
+                else if (move == MOVE_DOWN)
+                {
+                    blockY--;
+                }
+
+                curr = 0;
+                for (int8_t j = 2; j >= 0; j--)
+                {
+                    for (int8_t i = 0; i < 3; i++)
+                    {
+                        if (i == 1 && j == 1)
+                        {
+                            blockAtPos = 1;
+                        }
+                        else
+                        {
+                            blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
+                                    & 1;
+                            curr++;
+                        }
+
+                        if (blockAtPos)
+                        {
+                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
+                            FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, PURPLE);
+
+                            if (move == MOVE_NONE && getStaticBlockBit(blockX + i, blockY + j))
+                            {
+                                G8RTOS_SignalSemaphore(&sem_lost);
+                                resetting = 1;
                             }
                         }
                     }
@@ -1002,7 +1156,6 @@ void FallingBlock_Thread()
             // trigger on spawn
             if (curBlock <= 4)
             {
-                // TODO check collision on spawn
                 blockY--;
             }
             else if (curBlock == SQUARE)
@@ -1227,9 +1380,13 @@ void Gravity_P()
 
 uint8_t staticCheckClear(int8_t row)
 {
-    if (row < 0 || row >= ROWS)
+    if (row >= ROWS)
     {
         abort();
+    }
+    else if (row < 0)
+    {
+        return 0;
     }
     for (uint8_t clear_i = 0; clear_i < COLS; clear_i++)
     {
