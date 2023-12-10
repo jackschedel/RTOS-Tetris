@@ -56,6 +56,7 @@
 
 #define SQUARE 6
 #define LINE 6
+#define EMPTY_WALLKICK 127
 
 #define ROT_VERTICAL (blockRotation - 1) % 2
 
@@ -187,12 +188,6 @@ void FallingBlock_Thread()
             move = MOVE_DOWN;
             instaDrop = 1;
             score += 2;
-        }
-        else if (move == MOVE_ROTATE)
-        {
-            blockRotation++;
-            if (blockRotation > 4)
-                blockRotation = 1;
         }
 
         reRenderBlock = 1;
@@ -364,6 +359,28 @@ void FallingBlock_Thread()
         }
         else if (move == MOVE_ROTATE)
         {
+
+            if (curBlock == LINE)
+            {
+                if (blockRotation == 1)
+                {
+                    blockX++;
+                    blockY--;
+                }
+                else if (blockRotation == 2)
+                {
+                    blockX--;
+                }
+                else if (blockRotation == 4)
+                {
+                    blockY++;
+                }
+            }
+
+            blockRotation++;
+            if (blockRotation > 4)
+                blockRotation = 1;
+
             reRenderBlock = 1;
             curr = 0;
             for (int8_t j = 2; j >= 0; j--)
@@ -520,12 +537,33 @@ void FallingBlock_Thread()
                 blockX--;
             }
 
+            if (!wallKick && curBlock == LINE)
+            {
+                wallKick = EMPTY_WALLKICK;
+            }
+
             if (!reRenderBlock || wallKick)
             {
                 blockRotation--;
                 if (blockRotation == 0)
                 {
                     blockRotation = 4;
+                }
+                if (curBlock == LINE)
+                {
+                    if (blockRotation == 1)
+                    {
+                        blockX--;
+                        blockY++;
+                    }
+                    else if (blockRotation == 2)
+                    {
+                        blockX++;
+                    }
+                    else if (blockRotation == 4)
+                    {
+                        blockY--;
+                    }
                 }
             }
 
@@ -667,7 +705,29 @@ void FallingBlock_Thread()
                     // then i coded it wrong lol
                     abort();
                 }
-                blockX += wallKick;
+
+                if (wallKick != EMPTY_WALLKICK)
+                {
+                    blockX += wallKick;
+                }
+
+                if (curBlock == LINE)
+                {
+                    if (blockRotation == 1)
+                    {
+                        blockX++;
+                        blockY--;
+                    }
+                    else if (blockRotation == 2)
+                    {
+                        blockX--;
+                    }
+                    else if (blockRotation == 4)
+                    {
+                        blockY++;
+                    }
+                }
+
                 blockRotation++;
                 if (blockRotation > 4)
                     blockRotation = 1;
