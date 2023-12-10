@@ -142,12 +142,6 @@ void FallingBlock_Thread()
         reRenderBlock = 0;
         if (move == 0)
         {
-
-            if (curBlock == 6)
-            {
-                blockX += 1;
-            }
-
             reRenderBlock = 1;
         }
 
@@ -571,17 +565,16 @@ void FallingBlock_Thread()
                 }
             }
         }
-        int32_t IBit_State = StartCriticalSection();
         if (piecePlaced)
         {
             G8RTOS_WriteFIFO(0, 0);
 
             if (curBlock == 6)
             {
-                setStaticBlockBit(blockX, blockY, 1);
-                setStaticBlockBit(blockX, blockY + 1, 1);
-                setStaticBlockBit(blockX + 1, blockY, 1);
-                setStaticBlockBit(blockX + 1, blockY + 1, 1);
+                setStaticBlockBit(blockX, blockY, 1, 1);
+                setStaticBlockBit(blockX, blockY + 1, 1, 1);
+                setStaticBlockBit(blockX + 1, blockY, 1, 1);
+                setStaticBlockBit(blockX + 1, blockY + 1, 1, 1);
 
                 checkClear(blockY, 1);
 
@@ -590,20 +583,20 @@ void FallingBlock_Thread()
             {
                 if (blockRotation % 2 - 1)
                 {
-                    setStaticBlockBit(blockX, blockY, 1);
-                    setStaticBlockBit(blockX, blockY + 1, 1);
-                    setStaticBlockBit(blockX, blockY + 2, 1);
-                    setStaticBlockBit(blockX, blockY + 3, 1);
+                    setStaticBlockBit(blockX, blockY, 1, 1);
+                    setStaticBlockBit(blockX, blockY + 1, 1, 1);
+                    setStaticBlockBit(blockX, blockY + 2, 1, 1);
+                    setStaticBlockBit(blockX, blockY + 3, 1, 1);
 
                     checkClear(blockY, 3);
 
                 }
                 else
                 {
-                    setStaticBlockBit(blockX, blockY, 1);
-                    setStaticBlockBit(blockX + 1, blockY, 1);
-                    setStaticBlockBit(blockX + 2, blockY, 1);
-                    setStaticBlockBit(blockX + 3, blockY, 1);
+                    setStaticBlockBit(blockX, blockY, 1, 1);
+                    setStaticBlockBit(blockX + 1, blockY, 1, 1);
+                    setStaticBlockBit(blockX + 2, blockY, 1, 1);
+                    setStaticBlockBit(blockX + 3, blockY, 1, 1);
 
                     checkClear(blockY, 0);
 
@@ -619,6 +612,12 @@ void FallingBlock_Thread()
             if (curBlock >= NUM_SHAPES)
                 curBlock = 5;
 
+            // spawn adjustment
+            if (curBlock == 6)
+            {
+                blockX += 1;
+            }
+
             piecePlaced = 0;
 
         }
@@ -632,19 +631,59 @@ void FallingBlock_Thread()
         //UARTprintf("Y: %d\n", blockY);
         //UARTprintf("Rotation: %d\n", blockRotation);
         UARTprintf("Score: %d\n", score);
-        EndCriticalSection(IBit_State);
     }
 }
 
+uint8_t numCleared = 0;
+uint8_t toClear = 0;
+
 void StaticBlocks_Thread()
 {
+    uint8_t i, j;
     while (true)
     {
         G8RTOS_WaitSemaphore(&sem_clearLine);
-        UARTprintf("\nRerender time!\n");
 
+        for (i = toClear; i < ROWS - numCleared; i++)
+        {
+            for (j = 0; j < COLS; j++)
+            {
+                uint8_t above = getStaticBlockBit(j, i + numCleared);
+                uint8_t curr = getStaticBlockBit(j, i);
+
+                if (!above && curr)
+                    ST7789_DrawRectangle(FRAME_X_OFF + j * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + i * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                else if (above && !curr)
+                    ST7789_DrawRectangle(FRAME_X_OFF + j * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + i * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
+
+            }
+        }
+
+        for (i = ROWS - 1; i <= ROWS - numCleared; i++)
+        {
+            for (j = 0; j < COLS; j++)
+            {
+                if (getStaticBlockBit(j, i))
+                    ST7789_DrawRectangle(FRAME_X_OFF + j * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + i * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+            }
+        }
+
+        for (i = 0; i < numCleared; i++)
+        {
+            slideStaticBlocks(toClear, 0);
+        }
+
+        numCleared = 0;
+        toClear = 0;
+
+        G8RTOS_WriteFIFO(0, 0);
     }
-
 }
 
 uint8_t is_dead = 0;
@@ -736,45 +775,42 @@ void Gravity_P()
     G8RTOS_Yield();
 }
 
-void checkClear(int row, int offsetMax)
+void checkClear(int8_t row, uint8_t offsetMax)
 {
-    uint8_t totalCleared = 0;
-    for (uint8_t check_i = 0; check_i <= offsetMax; check_i++)
+    for (int8_t i = row + offsetMax; i >= row; i--)
     {
-        if (staticCheckClear(row + check_i))
+        if (staticCheckClear(i))
         {
-            for (uint8_t clear_i = 0; clear_i < COLS; clear_i++)
-            {
-                setStaticBlockBit(clear_i, row + check_i, 0);
-            }
-            totalCleared++;
+            numCleared++;
+            toClear = row;
         }
     }
 
-    if (totalCleared == 1)
+    if (numCleared == 1)
     {
         score += 100 * level_num;
     }
-    else if (totalCleared == 2)
+    else if (numCleared == 2)
     {
         score += 300 * level_num;
     }
-    else if (totalCleared == 3)
+    else if (numCleared == 3)
     {
         score += 500 * level_num;
     }
-    else if (totalCleared == 4)
+    else if (numCleared == 4)
     {
         score += 800 * level_num;
     }
 
-    if (totalCleared)
+    if (numCleared)
     {
         G8RTOS_SignalSemaphore(&sem_clearLine);
     }
+
 }
 
-uint8_t staticCheckClear(int row)
+uint8_t staticCheckClear(int8_t row)
 {
     if (row < 0 || row >= ROWS)
     {
@@ -790,9 +826,9 @@ uint8_t staticCheckClear(int row)
     return 1;
 }
 
-void setStaticBlockBit(int col, int row, int value)
+void setStaticBlockBit(int8_t col, int8_t row, int8_t value, uint8_t canLose)
 {
-    if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
+    if ((row < 0 || row >= ROWS || col < 0 || col >= COLS) && canLose)
     {
         G8RTOS_SignalSemaphore(&sem_lost);
         resetting = 1;
@@ -801,19 +837,23 @@ void setStaticBlockBit(int col, int row, int value)
     int byteIndex = bitIndex / BITS_PER_BYTE;
     int bitInByte = bitIndex % BITS_PER_BYTE;
 
-    if (value == 1 && ((static_blocks[byteIndex] >> bitInByte) & 1) && !resetting)
+    if (value == 1 && ((static_blocks[byteIndex] >> bitInByte) & 1) && !resetting && canLose)
     {
         G8RTOS_SignalSemaphore(&sem_lost);
         resetting = 1;
     }
 
     if (value)
+    {
         static_blocks[byteIndex] |= (1 << bitInByte);
+    }
     else
+    {
         static_blocks[byteIndex] &= ~(1 << bitInByte);
+    }
 }
 
-uint8_t getStaticBlockBit(int col, int row)
+uint8_t getStaticBlockBit(int8_t col, int8_t row)
 {
     if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
     {
@@ -824,6 +864,27 @@ uint8_t getStaticBlockBit(int col, int row)
     int bitInByte = bitIndex % BITS_PER_BYTE;
 
     return (static_blocks[byteIndex] >> bitInByte) & 1;
+}
+
+void slideStaticBlocks(int8_t row, uint8_t slideCount)
+{
+    if (row < 0 || row >= ROWS)
+    {
+        abort();
+    }
+
+    for (uint8_t r = row; r < ROWS - 1; r++)
+    {
+        for (uint8_t c = 0; c < COLS; c++)
+        {
+            setStaticBlockBit(c, r, getStaticBlockBit(c, r + 1), 0);
+        }
+    }
+
+    for (uint8_t c = 0; c < COLS; c++)
+    {
+        setStaticBlockBit(c, ROWS - 1, 0, 0);
+    }
 }
 
 void renderCrosshatchGrid()

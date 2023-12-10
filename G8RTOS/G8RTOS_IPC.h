@@ -17,7 +17,7 @@
 /*************************************Defines***************************************/
 
 #define FIFO_SIZE 16
-#define MAX_NUMBER_OF_FIFOS 1
+#define MAX_NUMBER_OF_FIFOS 2
 
 /*************************************Defines***************************************/
 
@@ -44,6 +44,7 @@ typedef struct FIFO_t
 int32_t G8RTOS_InitFIFO(uint32_t FIFO_index);
 int32_t G8RTOS_ReadFIFO(uint32_t FIFO_index);
 int32_t G8RTOS_WriteFIFO(uint32_t FIFO_index, uint32_t data);
+uint8_t G8RTOS_FIFO_Empty(uint32_t FIFO_index);
 
 /********************************Public Functions***********************************/
 

@@ -96,3 +96,11 @@ int32_t G8RTOS_WriteFIFO(uint32_t FIFO_index, uint32_t data)
 
     return 0;
 }
+
+uint8_t G8RTOS_FIFO_Empty(uint32_t FIFO_index)
+{
+    if (FIFOs[FIFO_index].currentSize)
+        return 0;
+    else
+        return 1;
+}

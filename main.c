@@ -67,6 +67,7 @@ int main(void)
     G8RTOS_InitSemaphore(&sem_lost, 0);
 
     G8RTOS_InitFIFO(0);
+    G8RTOS_InitFIFO(1);
 
     G8RTOS_AddThread(FallingBlock_Thread, 252, "Fall", 2);
     G8RTOS_AddThread(Lost_Thread, 250, "Lost", 1);
