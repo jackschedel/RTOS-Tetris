@@ -64,6 +64,7 @@ uint32_t score = 0;
 uint8_t level_num = 1;
 
 unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
+unsigned char old_static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
 
 /*************************************Defines***************************************/
 
@@ -75,16 +76,15 @@ void Idle_Thread()
         ;
 }
 
-uint8_t resetting_i = 0;
 void Lost_Thread()
 {
     while (true)
     {
         G8RTOS_WaitSemaphore(&sem_lost);
 
-        for (resetting_i = 0; resetting_i < BLOCKS_ARRAY_SIZE; resetting_i++)
+        for (uint8_t i = 0; i < BLOCKS_ARRAY_SIZE; i++)
         {
-            static_blocks[resetting_i] = 0;
+            static_blocks[i] = 0;
         }
 
         ST7789_DrawRectangle(FRAME_X_OFF, FRAME_Y_OFF,
@@ -745,8 +745,6 @@ void FallingBlock_Thread()
                 setStaticBlockBit(blockX + 1, blockY, 1, 1);
                 setStaticBlockBit(blockX + 1, blockY + 1, 1, 1);
 
-                checkClear(blockY, 1);
-
             }
             else if (curBlock == 5)
             {
@@ -756,9 +754,6 @@ void FallingBlock_Thread()
                     setStaticBlockBit(blockX, blockY + 1, 1, 1);
                     setStaticBlockBit(blockX, blockY + 2, 1, 1);
                     setStaticBlockBit(blockX, blockY + 3, 1, 1);
-
-                    checkClear(blockY, 3);
-
                 }
                 else
                 {
@@ -767,10 +762,11 @@ void FallingBlock_Thread()
                     setStaticBlockBit(blockX + 2, blockY, 1, 1);
                     setStaticBlockBit(blockX + 3, blockY, 1, 1);
 
-                    checkClear(blockY, 0);
-
                 }
             }
+
+            G8RTOS_SignalSemaphore(&sem_clearLine);
+            G8RTOS_Yield();
 
             curBlock++;
             blockRotation = 1;
@@ -803,32 +799,72 @@ void FallingBlock_Thread()
     }
 }
 
-uint8_t numCleared = 0;
-uint8_t toClear = 0;
-
 void StaticBlocks_Thread()
 {
-    uint8_t i, j;
+    int8_t i, j, numCleared;
+    uint8_t old, shifted;
+
     while (true)
     {
         G8RTOS_WaitSemaphore(&sem_clearLine);
 
-        for (i = toClear; i < ROWS - numCleared; i++)
+        numCleared = 0;
+
+        for (i = blockY + 3; i >= blockY; i--)
+        {
+            if (i >= ROWS)
+                break;
+
+            if (staticCheckClear(i))
+            {
+                if (!numCleared)
+                {
+                    for (j = 0; j < BLOCKS_ARRAY_SIZE; j++)
+                    {
+                        old_static_blocks[j] = static_blocks[j];
+                    }
+                }
+
+                numCleared++;
+                slideStaticBlocks(i);
+            }
+        }
+
+        if (!numCleared)
+            continue;
+
+        if (numCleared == 1)
+        {
+            score += 100 * level_num;
+        }
+        else if (numCleared == 2)
+        {
+            score += 300 * level_num;
+        }
+        else if (numCleared == 3)
+        {
+            score += 500 * level_num;
+        }
+        else if (numCleared == 4)
+        {
+            score += 800 * level_num;
+        }
+
+        for (++i; i < ROWS - numCleared; i++)
         {
             for (j = 0; j < COLS; j++)
             {
-                uint8_t above = getStaticBlockBit(j, i + numCleared);
-                uint8_t curr = getStaticBlockBit(j, i);
+                old = getOldStaticBlockBit(j, i);
+                shifted = getStaticBlockBit(j, i);
 
-                if (!above && curr)
+                if (!shifted && old)
                     ST7789_DrawRectangle(FRAME_X_OFF + j * BLOCK_SIZE + 1,
                     FRAME_Y_OFF + i * BLOCK_SIZE + 1,
                                          BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
-                else if (above && !curr)
+                else if (shifted && !old)
                     ST7789_DrawRectangle(FRAME_X_OFF + j * BLOCK_SIZE + 1,
                     FRAME_Y_OFF + i * BLOCK_SIZE + 1,
                                          BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
-
             }
         }
 
@@ -843,13 +879,7 @@ void StaticBlocks_Thread()
             }
         }
 
-        for (i = 0; i < numCleared; i++)
-        {
-            slideStaticBlocks(toClear, 0);
-        }
-
         numCleared = 0;
-        toClear = 0;
 
         G8RTOS_WriteFIFO(0, 0);
     }
@@ -944,41 +974,6 @@ void Gravity_P()
     G8RTOS_Yield();
 }
 
-void checkClear(int8_t row, uint8_t offsetMax)
-{
-    for (int8_t i = row + offsetMax; i >= row; i--)
-    {
-        if (staticCheckClear(i))
-        {
-            numCleared++;
-            toClear = row;
-        }
-    }
-
-    if (numCleared == 1)
-    {
-        score += 100 * level_num;
-    }
-    else if (numCleared == 2)
-    {
-        score += 300 * level_num;
-    }
-    else if (numCleared == 3)
-    {
-        score += 500 * level_num;
-    }
-    else if (numCleared == 4)
-    {
-        score += 800 * level_num;
-    }
-
-    if (numCleared)
-    {
-        G8RTOS_SignalSemaphore(&sem_clearLine);
-    }
-
-}
-
 uint8_t staticCheckClear(int8_t row)
 {
     if (row < 0 || row >= ROWS)
@@ -1035,7 +1030,20 @@ uint8_t getStaticBlockBit(int8_t col, int8_t row)
     return (static_blocks[byteIndex] >> bitInByte) & 1;
 }
 
-void slideStaticBlocks(int8_t row, uint8_t slideCount)
+uint8_t getOldStaticBlockBit(int8_t col, int8_t row)
+{
+    if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
+    {
+        return 1;
+    }
+    int bitIndex = row * COLS + col;
+    int byteIndex = bitIndex / BITS_PER_BYTE;
+    int bitInByte = bitIndex % BITS_PER_BYTE;
+
+    return (old_static_blocks[byteIndex] >> bitInByte) & 1;
+}
+
+void slideStaticBlocks(int8_t row)
 {
     if (row < 0 || row >= ROWS)
     {

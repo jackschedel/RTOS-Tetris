@@ -37,8 +37,8 @@ void setStaticBlockBit(int8_t col, int8_t row, int8_t value, uint8_t canLose);
 uint8_t getStaticBlockBit(int8_t row, int8_t col);
 void renderCrosshatchGrid();
 uint8_t staticCheckClear(int8_t row);
-void checkClear(int8_t row, uint8_t offsetMax);
-void slideStaticBlocks(int8_t row, uint8_t slideCount);
+void slideStaticBlocks(int8_t row);
+uint8_t getOldStaticBlockBit(int8_t col, int8_t row);
 
 /********************************Thread Functions***********************************/
 
