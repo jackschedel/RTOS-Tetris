@@ -115,6 +115,8 @@ void FallingBlock_Thread()
     uint8_t needsMove = 1;
     uint8_t instaDrop = 0;
 
+    int8_t wallKick = 0;
+
     ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF - 1,
     FRAME_X_OFF + BLOCK_SIZE * COLS,
                     FRAME_Y_OFF - 1, 0xFFFF);
@@ -137,8 +139,14 @@ void FallingBlock_Thread()
     // 0 1 2
     // 3 F 4
     // 5 6 7
-    unsigned char shapes[NUM_SHAPES - 2] = { 0b10011000, 0b00111000, 0b01110000, 0b01011000,
-                                             0b11001000 };
+    unsigned char shapes[4][NUM_SHAPES - 2] = { { 0b10011000, 0b00111000, 0b01110000, 0b01011000,
+                                                  0b11001000 },
+                                                { 0b01100010, 0b01000011, 0b010001001, 0b01001010,
+                                                  0b00101010 },
+                                                { 0b00011001, 0b00011100, 0b00001110, 0b00011010,
+                                                  0b00010011 },
+                                                { 0b01000110, 0b11000010, 0b10010010, 0b01010010,
+                                                  0b01010100 } };
 
     G8RTOS_WriteFIFO(0, 0);
 
@@ -156,6 +164,7 @@ void FallingBlock_Thread()
         needsMove = 1;
         instaDrop = 0;
         reRenderBlock = 0;
+        wallKick = 0;
         if (move == MOVE_NONE)
         {
             reRenderBlock = 1;
@@ -283,14 +292,40 @@ void FallingBlock_Thread()
             {
                 if (blockRotation == 2)
                 {
-
                     if (getStaticBlockBit(blockX + 2, blockY - 2)
                             || getStaticBlockBit(blockX + 2, blockY - 1)
                             || getStaticBlockBit(blockX + 2, blockY)
                             || getStaticBlockBit(blockX + 2, blockY + 1))
                     {
-                        blockRotation--;
-                        needsMove = 0;
+                        blockX++;
+                        if (getStaticBlockBit(blockX + 2, blockY - 2)
+                                || getStaticBlockBit(blockX + 2, blockY - 1)
+                                || getStaticBlockBit(blockX + 2, blockY)
+                                || getStaticBlockBit(blockX + 2, blockY + 1))
+                        {
+                            blockX -= 2;
+                            if (getStaticBlockBit(blockX + 2, blockY - 2)
+                                    || getStaticBlockBit(blockX + 2, blockY - 1)
+                                    || getStaticBlockBit(blockX + 2, blockY)
+                                    || getStaticBlockBit(blockX + 2, blockY + 1))
+                            {
+                                blockX++;
+                                blockRotation--;
+                                needsMove = 0;
+                            }
+                            else
+                            {
+                                wallKick = -1;
+                                blockX++;
+
+                            }
+                        }
+                        else
+                        {
+                            wallKick = 1;
+                            blockX--;
+
+                        }
 
                     }
                 }
@@ -301,12 +336,38 @@ void FallingBlock_Thread()
                             || getStaticBlockBit(blockX + 1, blockY + 1)
                             || getStaticBlockBit(blockX + 1, blockY + 2))
                     {
-                        blockRotation--;
-                        needsMove = 0;
+                        blockX++;
+                        if (getStaticBlockBit(blockX + 1, blockY - 1)
+                                || getStaticBlockBit(blockX + 1, blockY)
+                                || getStaticBlockBit(blockX + 1, blockY + 1)
+                                || getStaticBlockBit(blockX + 1, blockY + 2))
+                        {
+                            blockX -= 2;
+                            if (getStaticBlockBit(blockX + 1, blockY - 1)
+                                    || getStaticBlockBit(blockX + 1, blockY)
+                                    || getStaticBlockBit(blockX + 1, blockY + 1)
+                                    || getStaticBlockBit(blockX + 1, blockY + 2))
+                            {
+                                blockX++;
+                                blockRotation--;
+                                needsMove = 0;
+                            }
+                            else
+                            {
+                                wallKick = -1;
+                                blockX++;
+
+                            }
+                        }
+                        else
+                        {
+                            wallKick = 1;
+                            blockX--;
+
+                        }
 
                     }
                 }
-
                 else if (blockRotation == 3)
                 {
                     if (getStaticBlockBit(blockX - 2, blockY + 1)
@@ -314,8 +375,36 @@ void FallingBlock_Thread()
                             || getStaticBlockBit(blockX, blockY + 1)
                             || getStaticBlockBit(blockX + 1, blockY + 1))
                     {
-                        blockRotation--;
-                        needsMove = 0;
+                        blockX++;
+                        if (getStaticBlockBit(blockX - 2, blockY + 1)
+                                || getStaticBlockBit(blockX - 1, blockY + 1)
+                                || getStaticBlockBit(blockX, blockY + 1)
+                                || getStaticBlockBit(blockX + 1, blockY + 1))
+                        {
+                            blockX -= 2;
+                            if (getStaticBlockBit(blockX - 2, blockY + 1)
+                                    || getStaticBlockBit(blockX - 1, blockY + 1)
+                                    || getStaticBlockBit(blockX, blockY + 1)
+                                    || getStaticBlockBit(blockX + 1, blockY + 1))
+                            {
+                                blockX++;
+                                blockRotation--;
+                                needsMove = 0;
+                            }
+                            else
+                            {
+                                wallKick = -1;
+                                blockX++;
+
+                            }
+                        }
+                        else
+                        {
+                            wallKick = 1;
+                            blockX--;
+
+                        }
+
                     }
                 }
                 else if (blockRotation == 1)
@@ -325,15 +414,40 @@ void FallingBlock_Thread()
                             || getStaticBlockBit(blockX + 1, blockY + 2)
                             || getStaticBlockBit(blockX + 2, blockY + 2))
                     {
-                        blockRotation--;
-                        needsMove = 0;
+                        blockX++;
+                        if (getStaticBlockBit(blockX - 1, blockY + 2)
+                                || getStaticBlockBit(blockX, blockY + 2)
+                                || getStaticBlockBit(blockX + 1, blockY + 2)
+                                || getStaticBlockBit(blockX + 2, blockY + 2))
+                        {
+                            blockX -= 2;
+                            if (getStaticBlockBit(blockX - 1, blockY + 2)
+                                    || getStaticBlockBit(blockX, blockY + 2)
+                                    || getStaticBlockBit(blockX + 1, blockY + 2)
+                                    || getStaticBlockBit(blockX + 2, blockY + 2))
+                            {
+                                blockX++;
+                                blockRotation--;
+                                needsMove = 0;
+                            }
+                            else
+                            {
+                                wallKick = -1;
+                                blockX++;
+
+                            }
+                        }
+                        else
+                        {
+                            wallKick = 1;
+                            blockX--;
+
+                        }
+
                     }
                 }
-
             }
-            else
-
-            if (blockRotation % 2 - 1)
+            else if (blockRotation % 2 - 1)
             {
                 if (move == MOVE_LEFT)
                 {
@@ -617,6 +731,8 @@ void FallingBlock_Thread()
                                 blockX += 1;
                             }
 
+                            blockX += wallKick;
+
                         }
 
                         ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
@@ -695,6 +811,7 @@ void FallingBlock_Thread()
                                 blockY += 2;
                                 blockX -= 1;
                             }
+                            blockX += wallKick;
                         }
 
                         ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
