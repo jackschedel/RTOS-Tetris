@@ -54,6 +54,9 @@
 #define MOVE_ROTATE 4
 #define MOVE_INSTADROP 5
 
+#define LINE 5
+#define SQUARE 6
+
 uint8_t point_count = 0;
 uint8_t line_count = 1;
 uint8_t blockRotation = 1;
@@ -136,6 +139,7 @@ void FallingBlock_Thread()
     // 5 6 7
     unsigned char shapes[NUM_SHAPES - 2] = { 0b10011000, 0b00111000, 0b01110000, 0b01011000,
                                              0b11001000 };
+
     G8RTOS_WriteFIFO(0, 0);
 
     while (true)
@@ -183,11 +187,11 @@ void FallingBlock_Thread()
             {
                 dims = 0b00110010;
             }
-            else if (curBlock == 5)
+            else if (curBlock == LINE)
             {
                 dims = 0b01000001;
             }
-            else if (curBlock == 6)
+            else if (curBlock == SQUARE)
             {
                 dims = 0b00100010;
             }
@@ -224,7 +228,7 @@ void FallingBlock_Thread()
         {
             // todo check collision on others
         }
-        else if (curBlock == 6)
+        else if (curBlock == SQUARE)
         {
             if (move == MOVE_LEFT)
             {
@@ -273,7 +277,7 @@ void FallingBlock_Thread()
             }
 
         }
-        else if (curBlock == 5)
+        else if (curBlock == LINE)
         {
             if (move == MOVE_ROTATE)
             {
@@ -468,7 +472,7 @@ void FallingBlock_Thread()
                                      BLOCK_SIZE * 3, BLOCK_SIZE * 3, PURPLE);
             }
             //  2x2
-            else if (curBlock == 6)
+            else if (curBlock == SQUARE)
             {
                 if (reRenderBlock)
                 {
@@ -545,7 +549,7 @@ void FallingBlock_Thread()
 
             }
             // 1x4
-            else if (curBlock == 5)
+            else if (curBlock == LINE)
             {
                 // straight up
                 if (blockRotation % 2 - 1)
@@ -738,7 +742,7 @@ void FallingBlock_Thread()
         {
             G8RTOS_WriteFIFO(0, 0);
 
-            if (curBlock == 6)
+            if (curBlock == SQUARE)
             {
                 setStaticBlockBit(blockX, blockY, 1, 1);
                 setStaticBlockBit(blockX, blockY + 1, 1, 1);
@@ -746,7 +750,7 @@ void FallingBlock_Thread()
                 setStaticBlockBit(blockX + 1, blockY + 1, 1, 1);
 
             }
-            else if (curBlock == 5)
+            else if (curBlock == LINE)
             {
                 if (blockRotation % 2 - 1)
                 {
@@ -777,10 +781,35 @@ void FallingBlock_Thread()
             if (curBlock >= NUM_SHAPES)
                 curBlock = 5;
 
-            // spawn adjustment
-            if (curBlock == 6)
+            // on spawn
+            if (curBlock == SQUARE)
             {
-                blockX += 1;
+                blockX++;
+
+                if (getStaticBlockBit(blockX, blockY) || getStaticBlockBit(blockX, blockY + 1)
+                        || getStaticBlockBit(blockX + 1, blockY)
+                        || getStaticBlockBit(blockX + 1, blockY + 1))
+                {
+                    G8RTOS_SignalSemaphore(&sem_lost);
+                    resetting = 1;
+                }
+            }
+            else if (curBlock == LINE)
+            {
+                if (getStaticBlockBit(blockX, blockY) || getStaticBlockBit(blockX + 1, blockY)
+                        || getStaticBlockBit(blockX + 2, blockY)
+                        || getStaticBlockBit(blockX + 3, blockY))
+                {
+                    blockY++;
+                    if (getStaticBlockBit(blockX, blockY) || getStaticBlockBit(blockX + 1, blockY)
+                            || getStaticBlockBit(blockX + 2, blockY)
+                            || getStaticBlockBit(blockX + 3, blockY))
+                    {
+                        blockY--;
+                        G8RTOS_SignalSemaphore(&sem_lost);
+                        resetting = 1;
+                    }
+                }
             }
 
             piecePlaced = 0;
@@ -796,6 +825,7 @@ void FallingBlock_Thread()
         //UARTprintf("Y: %d\n", blockY);
         //UARTprintf("Rotation: %d\n", blockRotation);
         UARTprintf("Score: %d\n", score);
+        G8RTOS_Yield();
     }
 }
 
@@ -1019,9 +1049,13 @@ void setStaticBlockBit(int8_t col, int8_t row, int8_t value, uint8_t canLose)
 
 uint8_t getStaticBlockBit(int8_t col, int8_t row)
 {
-    if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
+    if (row < 0 || col < 0 || col >= COLS)
     {
         return 1;
+    }
+    else if (row >= ROWS)
+    {
+        return 0;
     }
     int bitIndex = row * COLS + col;
     int byteIndex = bitIndex / BITS_PER_BYTE;
