@@ -40,7 +40,6 @@
 #define BLOCK_SIZE 9
 #define YELLOW 0x07FF
 #define LIGHT_BLUE 0xFFE0
-#define PURPLE 0xF813
 #define DARK_GRAY 0x31A6
 #define GRAY 0xAD55
 
@@ -126,6 +125,8 @@ void FallingBlock_Thread()
     int8_t wallKick = 0;
     uint8_t curr, blockAtPos, prevBlockAtPos = 0;
 
+    uint16_t colors[NUM_SHAPES - 2] = { 0xF800, 0x055F, 0x07E0, 0xF81F, 0x001F };
+
     ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF - 1,
     FRAME_X_OFF + BLOCK_SIZE * COLS,
                     FRAME_Y_OFF - 1, 0xFFFF);
@@ -178,12 +179,17 @@ void FallingBlock_Thread()
         {
             reRenderBlock = 1;
         }
-
-        if (move == MOVE_INSTADROP)
+        else if (move == MOVE_INSTADROP)
         {
             move = MOVE_DOWN;
             instaDrop = 1;
             score += 2;
+        }
+        else if (move == MOVE_ROTATE)
+        {
+            blockRotation++;
+            if (blockRotation > 4)
+                blockRotation = 1;
         }
 
         if (curBlock <= 4)
@@ -321,7 +327,8 @@ void FallingBlock_Thread()
                             {
                                 ST7789_DrawRectangle(FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
                                 FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
-                                                     BLOCK_SIZE - 2, BLOCK_SIZE - 2, PURPLE);
+                                                     BLOCK_SIZE - 2, BLOCK_SIZE - 2,
+                                                     colors[curBlock]);
 
                             }
                             else if (!blockAtPos && prevBlockAtPos)
@@ -398,7 +405,7 @@ void FallingBlock_Thread()
                         {
                             ST7789_DrawRectangle(FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
                             FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
-                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, PURPLE);
+                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[curBlock]);
 
                             if (move == MOVE_NONE && getStaticBlockBit(blockX + i, blockY + j))
                             {
@@ -1341,9 +1348,6 @@ void Get_Input_P()
     {
         if (rotate_released)
         {
-            blockRotation++;
-            if (blockRotation > 4)
-                blockRotation = 1;
             rotate_released = false;
             G8RTOS_WriteFIFO(0, 4);
         }
