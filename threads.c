@@ -94,6 +94,8 @@ void Lost_Thread()
         resetting = 0;
 
         renderCrosshatchGrid();
+
+        G8RTOS_WriteFIFO(0, 0);
     }
 }
 
@@ -143,6 +145,9 @@ void FallingBlock_Thread()
         // down = 3
         // rotate = 4
         uint8_t move = G8RTOS_ReadFIFO(0);
+
+        if (resetting)
+            continue;
 
         needsMove = 1;
         instaDrop = 0;
@@ -249,9 +254,21 @@ void FallingBlock_Thread()
                     piecePlaced = 1;
                     needsMove = 0;
 
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE,
-                                         BLOCK_SIZE * 2, BLOCK_SIZE * 2, GRAY);
+                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
+
+                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
+
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
+
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
                 }
             }
 
@@ -659,7 +676,7 @@ void FallingBlock_Thread()
             blockX = START_X;
 
             if (curBlock >= NUM_SHAPES)
-                curBlock = 5;
+                curBlock = 6;
 
             // spawn adjustment
             if (curBlock == 6)
