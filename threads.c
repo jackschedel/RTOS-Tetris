@@ -243,13 +243,33 @@ void FallingBlock_Thread()
                 }
                 else
                 {
+                    if (instaDrop)
+                    {
+                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
+                        FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+
+                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
+                        FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+
+                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                        FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+
+                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                        FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                    }
+
+                    needsMove = 0;
                     blockY--;
+
                 }
             }
 
             if (needsMove)
             {
-
                 if (reRenderBlock)
                 {
                     ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
@@ -536,7 +556,6 @@ void FallingBlock_Thread()
                         ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
-
                         ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
@@ -549,6 +568,22 @@ void FallingBlock_Thread()
                     }
                     else
                     {
+                        if (instaDrop)
+                        {
+                            ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
+                            FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                            ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
+                            FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                            ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
+                            FRAME_Y_OFF + (blockY + 2) * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                            ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
+                            FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                            needsMove = 0;
+                        }
                         blockY--;
                     }
                 }
@@ -595,21 +630,34 @@ void FallingBlock_Thread()
                         ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
-
                         ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
-
                         ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 2) * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
-
                         ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
                     }
                     else
                     {
+                        if (instaDrop)
+                        {
+                            ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
+                            FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                            FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 2) * BLOCK_SIZE + 1,
+                            FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
+                            FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                            needsMove = 0;
+                        }
                         blockY--;
                     }
                 }
