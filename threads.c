@@ -38,7 +38,6 @@
 #define FRAME_X_OFF 30
 #define FRAME_Y_OFF 65
 #define BLOCK_SIZE 9
-#define YELLOW 0x07FF
 #define LIGHT_BLUE 0xFFE0
 #define DARK_GRAY 0x31A6
 #define GRAY 0xAD55
@@ -56,8 +55,7 @@
 #define STRAIGHT_UP blockRotation % 2 - 1
 #define HORIZONTAL 1
 
-#define LINE 5
-#define SQUARE 6
+#define LINE 6
 
 #define ROT_1 blockRotation == 1
 #define ROT_2 blockRotation == 2
@@ -125,7 +123,7 @@ void FallingBlock_Thread()
     int8_t wallKick = 0;
     uint8_t curr, blockAtPos, prevBlockAtPos = 0;
 
-    uint16_t colors[NUM_SHAPES - 2] = { 0xF800, 0x055F, 0x07E0, 0xF81F, 0x001F };
+    uint16_t colors[NUM_SHAPES - 1] = { 0xF800, 0x055F, 0x07E0, 0xF81F, 0x001F, 0x07FF };
 
     ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF - 1,
     FRAME_X_OFF + BLOCK_SIZE * COLS,
@@ -149,14 +147,14 @@ void FallingBlock_Thread()
     // 0 1 2
     // 3 F 4
     // 5 6 7
-    unsigned char shapes[4][NUM_SHAPES - 2] = { { 0b10011000, 0b00111000, 0b01110000, 0b01011000,
-                                                  0b11001000 },
+    unsigned char shapes[4][NUM_SHAPES - 1] = { { 0b10011000, 0b00111000, 0b01110000, 0b01011000,
+                                                  0b11001000, 0b00010110 },
                                                 { 0b01100010, 0b01000011, 0b01001001, 0b01001010,
-                                                  0b00101010 },
+                                                  0b00101010, 0b00010110 },
                                                 { 0b00011001, 0b00011100, 0b00001110, 0b00011010,
-                                                  0b00010011 },
+                                                  0b00010011, 0b00010110 },
                                                 { 0b01000110, 0b11000010, 0b10010010, 0b01010010,
-                                                  0b01010100 } };
+                                                  0b01010100, 0b00010110 } };
 
     G8RTOS_WriteFIFO(0, 0);
 
@@ -192,7 +190,7 @@ void FallingBlock_Thread()
                 blockRotation = 1;
         }
 
-        if (curBlock <= 4)
+        if (curBlock <= 5)
         {
             reRenderBlock = 1;
 
@@ -536,169 +534,6 @@ void FallingBlock_Thread()
                             }
                         }
                     }
-                }
-            }
-        }
-        else if (curBlock == SQUARE)
-        {
-            if (move == MOVE_LEFT)
-            {
-                if (getStaticBlockBit(blockX - 1, blockY)
-                        || getStaticBlockBit(blockX - 1, blockY + 1))
-                {
-                    needsMove = 0;
-                }
-                else
-                {
-                    blockX--;
-                }
-            }
-            else if (move == MOVE_RIGHT)
-            {
-                if (getStaticBlockBit(blockX + 2, blockY)
-                        || getStaticBlockBit(blockX + 2, blockY + 1))
-                {
-                    needsMove = 0;
-                }
-                else
-                {
-                    blockX++;
-                }
-
-            }
-            else if (move == MOVE_DOWN)
-            {
-                if (getStaticBlockBit(blockX, blockY - 1)
-                        || getStaticBlockBit(blockX + 1, blockY - 1))
-                {
-                    piecePlaced = 1;
-                    needsMove = 0;
-
-                    setStaticBlockBit(blockX, blockY, 1, 1);
-                    setStaticBlockBit(blockX, blockY + 1, 1, 1);
-                    setStaticBlockBit(blockX + 1, blockY, 1, 1);
-                    setStaticBlockBit(blockX + 1, blockY + 1, 1, 1);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
-                }
-                else
-                {
-                    if (instaDrop)
-                    {
-                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
-                        FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
-                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
-
-                        ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
-                        FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
-
-                        ST7789_DrawRectangle(
-                        FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                                             FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
-                                             BLOCK_SIZE - 2,
-                                             BLOCK_SIZE - 2, 0);
-
-                        ST7789_DrawRectangle(
-                        FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                                             FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                             BLOCK_SIZE - 2,
-                                             BLOCK_SIZE - 2, 0);
-                    }
-
-                    needsMove = 0;
-                    blockY--;
-
-                }
-            }
-
-            if (needsMove)
-            {
-                if (reRenderBlock)
-                {
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, YELLOW);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, YELLOW);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, YELLOW);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, YELLOW);
-                    reRenderBlock = 0;
-                }
-                else if (move == MOVE_LEFT)
-                {
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 2) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 2) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, YELLOW);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, YELLOW);
-                }
-                else if (move == MOVE_RIGHT)
-                {
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX - 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX - 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, YELLOW);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, YELLOW);
-                }
-                else if (move == MOVE_DOWN)
-                {
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 2) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 2) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + blockX * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, YELLOW);
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + blockY * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, YELLOW);
                 }
             }
         }
@@ -1303,17 +1138,9 @@ void FallingBlock_Thread()
             {
                 blockY--;
             }
-            else if (curBlock == SQUARE)
+            else if (curBlock == 5)
             {
                 blockX++;
-
-                if (getStaticBlockBit(blockX, blockY) || getStaticBlockBit(blockX, blockY + 1)
-                        || getStaticBlockBit(blockX + 1, blockY)
-                        || getStaticBlockBit(blockX + 1, blockY + 1))
-                {
-                    G8RTOS_SignalSemaphore(&sem_lost);
-                    resetting = 1;
-                }
             }
             else if (curBlock == LINE)
             {
