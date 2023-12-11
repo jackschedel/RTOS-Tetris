@@ -181,6 +181,12 @@ void FallingBlock_Thread()
         wallKick = 0;
         if (move == MOVE_NONE)
         {
+            // piece lookahead
+
+            uint8_t yOffset = 4;
+            uint8_t xOffset = 1;
+            uint8_t pieceOffset = 1;
+            uint8_t previewBlock = piece_grab_bag[(curBlockInd + pieceOffset) % NUM_SHAPES];
 
             curr = 0;
             for (int8_t j = 2; j >= 0; j--)
@@ -195,31 +201,43 @@ void FallingBlock_Thread()
                         }
                         else
                         {
-                            blockAtPos = shapes[1][piece_grab_bag[(curBlockInd + 1) % NUM_SHAPES]]
-                                    >> (7 - curr) & 1;
+                            blockAtPos = shapes[1][previewBlock] >> (7 - curr) & 1;
                             curr++;
                         }
 
                         if (blockAtPos)
                         {
                             ST7789_DrawRectangle(
-                                    FRAME_X_OFF + ( COLS + 1 + i) * BLOCK_SIZE + 1,
-                                    FRAME_Y_OFF + (ROWS - 3 + j) * BLOCK_SIZE + 1,
+                                    FRAME_X_OFF + (COLS + 1 + i + xOffset) * BLOCK_SIZE + 1,
+                                    FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1,
                                     BLOCK_SIZE - 2,
                                     BLOCK_SIZE - 2,
-                                    colors[piece_grab_bag[(curBlockInd + 1) % NUM_SHAPES]]);
-
+                                    colors[previewBlock]);
                         }
                         else
                         {
                             ST7789_DrawRectangle(
-                            FRAME_X_OFF + ( COLS + 1 + i) * BLOCK_SIZE + 1,
-                                                 FRAME_Y_OFF + (ROWS - 3 + j) * BLOCK_SIZE + 1,
-                                                 BLOCK_SIZE - 2,
-                                                 BLOCK_SIZE - 2, 0);
+                                    FRAME_X_OFF + (COLS + 1 + i + xOffset) * BLOCK_SIZE + 1,
+                                    FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1,
+                                    BLOCK_SIZE - 2,
+                                    BLOCK_SIZE - 2,
+                                    0);
                         }
                     }
                 }
+            }
+
+            if (previewBlock == LINE)
+            {
+                ST7789_DrawRectangle(FRAME_X_OFF + (COLS + 2 + xOffset) * BLOCK_SIZE + 1,
+                FRAME_Y_OFF + (ROWS - yOffset + 3) * BLOCK_SIZE + 1,
+                                     BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[previewBlock]);
+            }
+            else
+            {
+                ST7789_DrawRectangle(FRAME_X_OFF + (COLS + 2 + xOffset) * BLOCK_SIZE + 1,
+                FRAME_Y_OFF + (ROWS - yOffset + 3) * BLOCK_SIZE + 1,
+                                     BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
             }
 
             if (curBlock <= 4)
