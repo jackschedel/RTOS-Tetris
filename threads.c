@@ -62,7 +62,7 @@
 #define EMPTY_WALLKICK 127
 
 #define GRAVITY_THREAD_ID 50
-#define START_SPEED 1000.0
+#define START_SPEED 800.0
 
 #define ROT_VERTICAL (blockRotation - 1) % 2
 
@@ -116,7 +116,6 @@ void Lost_Thread()
         BLOCK_SIZE * COLS - 1,
                              BLOCK_SIZE * ROWS - 1, 0);
         score = 0;
-        resetting = 0;
         lines_cleared = 0;
         level_num = 1;
 
@@ -130,6 +129,7 @@ void Lost_Thread()
         curBlock = piece_grab_bag[curBlockInd];
 
         G8RTOS_WriteFIFO(0, 0);
+        resetting = 0;
     }
 }
 
@@ -1041,7 +1041,8 @@ void StaticBlocks_Thread()
 
         if (prevLevelNum != level_num)
         {
-            float_t period = START_SPEED * pow((0.8333), level_num) + (START_SPEED / 6.0);
+            // https://www.desmos.com/calculator/ir1s0pmyo5
+            float_t period = START_SPEED * pow((0.9), level_num) + (START_SPEED / 20.0);
             G8RTOS_Change_Period(GRAVITY_THREAD_ID, (uint32_t) period);
         }
 
