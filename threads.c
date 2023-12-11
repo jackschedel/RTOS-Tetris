@@ -191,10 +191,16 @@ void FallingBlock_Thread()
             }
             else if (curBlock == 6)
             {
-                blockY--;
-            }
+                if (!getStaticBlockBit(blockX, blockY) && !getStaticBlockBit(blockX + 1, blockY)
+                        && !getStaticBlockBit(blockX + 2, blockY)
+                        && !getStaticBlockBit(blockX + 3, blockY))
+                {
+                    blockY--;
 
-            reRenderBlock = 1;
+                }
+
+                reRenderBlock = 1;
+            }
         }
         else if (move == MOVE_INSTADROP)
         {
@@ -341,9 +347,11 @@ void FallingBlock_Thread()
 
                         if (blockAtPos)
                         {
-                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
-                            FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
-                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
+                            ST7789_DrawRectangle(
+                            FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
+                                                 FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2,
+                                                 BLOCK_SIZE - 2, GRAY);
                             setStaticBlockBit(blockX + i, blockY + j, 1, 1);
                         }
                     }
@@ -674,9 +682,11 @@ void FallingBlock_Thread()
 
                         if (blockAtPos)
                         {
-                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
-                            FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
-                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                            ST7789_DrawRectangle(
+                            FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
+                                                 FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2,
+                                                 BLOCK_SIZE - 2, 0);
                         }
                     }
                 }
@@ -766,9 +776,11 @@ void FallingBlock_Thread()
 
                         if (blockAtPos)
                         {
-                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
-                            FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
-                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[curBlock]);
+                            ST7789_DrawRectangle(
+                            FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
+                                                 FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2,
+                                                 BLOCK_SIZE - 2, colors[curBlock]);
 
                             if (move == MOVE_NONE && getStaticBlockBit(blockX + i, blockY + j))
                             {
