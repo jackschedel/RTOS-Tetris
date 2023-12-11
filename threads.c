@@ -61,6 +61,9 @@
 #define LINE 6
 #define EMPTY_WALLKICK 127
 
+#define GRAVITY_THREAD_ID 50
+#define START_SPEED 1200
+
 #define ROT_VERTICAL (blockRotation - 1) % 2
 
 // maximum value is NUM_SHAPES
@@ -98,6 +101,8 @@ void Lost_Thread()
     while (true)
     {
         G8RTOS_WaitSemaphore(&sem_lost);
+
+        G8RTOS_Change_Period(GRAVITY_THREAD_ID, START_SPEED / 2);
 
         G8RTOS_Sleep(800);
 
@@ -171,6 +176,8 @@ void FallingBlock_Thread()
                                               0b00010011, 0b00010110, 0b00011000 },
                                             { 0b01000110, 0b11000010, 0b10010010, 0b01010010,
                                               0b01010100, 0b00010110, 0b01000010 } };
+
+    G8RTOS_Add_PeriodicEvent(Gravity_P, START_SPEED, 50, GRAVITY_THREAD_ID);
 
     G8RTOS_WriteFIFO(0, 0);
 
@@ -1174,9 +1181,12 @@ void Get_Input_P()
 
 void Gravity_P()
 {
-    G8RTOS_WriteFIFO(0, 3);
-    timer++;
-    G8RTOS_Yield();
+    if (!resetting)
+    {
+        G8RTOS_WriteFIFO(0, MOVE_DOWN);
+        timer++;
+        G8RTOS_Yield();
+    }
 }
 
 uint8_t staticCheckClear(int8_t row)

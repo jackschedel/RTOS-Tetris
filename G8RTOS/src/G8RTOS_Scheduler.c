@@ -207,7 +207,7 @@ sched_ErrCode_t G8RTOS_AddAperiodicEvent(void (*threadToAdd)(void), uint8_t thre
 }
 
 sched_ErrCode_t G8RTOS_Add_PeriodicEvent(void (*threadToAdd)(void), uint32_t period,
-                                         uint32_t execution)
+                                         uint32_t execution, uint16_t id)
 {
     int32_t IBit_State = StartCriticalSection();
 
@@ -237,11 +237,34 @@ sched_ErrCode_t G8RTOS_Add_PeriodicEvent(void (*threadToAdd)(void), uint32_t per
     pthreadControlBlocks[NumberOfPThreads].functionPointer = threadToAdd;
     pthreadControlBlocks[NumberOfPThreads].period = period;
     pthreadControlBlocks[NumberOfPThreads].execution = SystemTime + execution;
+    pthreadControlBlocks[NumberOfPThreads].id = id;
 
     NumberOfPThreads++;
 
     EndCriticalSection(IBit_State);
     return NO_ERROR;
+}
+
+void G8RTOS_Change_Period(uint16_t id, uint32_t period)
+{
+
+    int32_t IBit_State = StartCriticalSection();
+
+    // find thread
+    ptcb_t *to_change;
+    for (uint8_t i = 0; i < NumberOfPThreads; i++)
+    {
+        to_change = &pthreadControlBlocks[i];
+        if (to_change->id == id)
+        {
+            to_change->period = period;
+            break;
+        }
+
+    }
+
+    EndCriticalSection(IBit_State);
+
 }
 
 // G8RTOS_AddThread
@@ -327,7 +350,10 @@ void G8RTOS_KillThread(uint16_t threadID)
     while (to_kill->id != threadID)
     {
         if (to_kill == CurrentlyRunningThread->previousTCB)
+        {
+            EndCriticalSection(IBit_State);
             return; // no thread with given ID exists
+        }
 
         to_kill = to_kill->nextTCB;
     }

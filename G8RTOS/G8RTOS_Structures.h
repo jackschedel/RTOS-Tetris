@@ -64,6 +64,7 @@ typedef struct ptcb_t
     uint32_t execution;
     struct ptcb_t *nextPTCB;
     struct ptcb_t *previousPTCB;
+    uint16_t id;
 } ptcb_t;
 
 /****************************Data Structure Definitions*****************************/

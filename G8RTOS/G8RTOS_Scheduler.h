@@ -78,7 +78,8 @@ sched_ErrCode_t G8RTOS_AddAperiodicEvent(void (*threadToAdd)(void), uint8_t thre
                                          int32_t IRQn);
 
 sched_ErrCode_t G8RTOS_Add_PeriodicEvent(void (*threadToAdd)(void), uint32_t period,
-                                         uint32_t execution);
+                                         uint32_t execution, uint16_t id);
+void G8RTOS_Change_Period(uint16_t id, uint32_t period);
 
 /********************************Public Functions***********************************/
 
