@@ -56,7 +56,7 @@
 #define STRAIGHT_UP blockRotation % 2 - 1
 #define HORIZONTAL 1
 
-#define SQUARE 6
+#define SQUARE 5
 #define LINE 6
 #define EMPTY_WALLKICK 127
 
@@ -183,10 +183,28 @@ void FallingBlock_Thread()
         {
             // piece lookahead
 
-            uint8_t yOffset = 4;
-            uint8_t xOffset = 1;
+            int8_t yOffset = 4;
+            int8_t xOffset = -1;
             uint8_t pieceOffset = 1;
             uint8_t previewBlock = piece_grab_bag[(curBlockInd + pieceOffset) % NUM_SHAPES];
+
+            for (int8_t j = 2; j >= 0; j--)
+            {
+                for (int8_t i = 0; i < 3; i++)
+                {
+                    ST7789_DrawRectangle(
+                    FRAME_X_OFF + (COLS + 1 + i + xOffset) * BLOCK_SIZE + 1,
+                                         FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2,
+                                         BLOCK_SIZE - 2, 0);
+                }
+            }
+
+            if (previewBlock == SQUARE)
+            {
+                yOffset--;
+                xOffset++;
+            }
 
             curr = 0;
             for (int8_t j = 2; j >= 0; j--)
@@ -214,17 +232,14 @@ void FallingBlock_Thread()
                                     BLOCK_SIZE - 2,
                                     colors[previewBlock]);
                         }
-                        else
-                        {
-                            ST7789_DrawRectangle(
-                                    FRAME_X_OFF + (COLS + 1 + i + xOffset) * BLOCK_SIZE + 1,
-                                    FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1,
-                                    BLOCK_SIZE - 2,
-                                    BLOCK_SIZE - 2,
-                                    0);
-                        }
                     }
                 }
+            }
+
+            if (previewBlock == SQUARE)
+            {
+                yOffset++;
+                xOffset--;
             }
 
             if (previewBlock == LINE)
