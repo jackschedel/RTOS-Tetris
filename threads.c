@@ -831,83 +831,101 @@ void FallingBlock_Thread()
                 if (blockRotation > 4)
                     blockRotation = 1;
             }
-
-            // if spawning a new piece, check if the player lost
-            curr = 0;
-            for (int8_t j = 2; j >= 0; j--)
+            else if (move == MOVE_SWAP)
             {
-                for (int8_t i = 0; i < 3; i++)
+                if (heldBlock == -1)
                 {
-                    if (i == 1 && j == 1)
-                    {
-                        blockAtPos = 1;
-                    }
-                    else
-                    {
-                        blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr) & 1;
-                        curr++;
-                    }
+                    heldBlock = piece_grab_bag[++curBlockInd];
+                }
+                uint8_t tempSwap = curBlock;
+                curBlock = heldBlock;
+                heldBlock = tempSwap;
 
-                    if (blockAtPos)
+                blockRotation = 1;
+                blockY = START_Y;
+                blockX = START_X;
+
+            }
+
+            if (move != MOVE_SWAP)
+            {
+                // if spawning a new piece, check if the player lost
+                curr = 0;
+                for (int8_t j = 2; j >= 0; j--)
+                {
+                    for (int8_t i = 0; i < 3; i++)
                     {
-                        if (move == MOVE_NONE && getStaticBlockBit(blockX + i, blockY + j))
+                        if (i == 1 && j == 1)
                         {
-                            resetting = 1;
+                            blockAtPos = 1;
+                        }
+                        else
+                        {
+                            blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
+                                    & 1;
+                            curr++;
+                        }
+
+                        if (blockAtPos)
+                        {
+                            if (move == MOVE_NONE && getStaticBlockBit(blockX + i, blockY + j))
+                            {
+                                resetting = 1;
+                            }
                         }
                     }
                 }
-            }
 
-            // render new block
-            curr = 0;
-            for (int8_t j = 2; j >= 0; j--)
-            {
-                for (int8_t i = 0; i < 3; i++)
+                if (resetting)
                 {
+                    G8RTOS_SignalSemaphore(&sem_lost);
+                    continue;
+                }
 
-                    if (i == 1 && j == 1)
+                // render new block
+                curr = 0;
+                for (int8_t j = 2; j >= 0; j--)
+                {
+                    for (int8_t i = 0; i < 3; i++)
                     {
-                        blockAtPos = 1;
+
+                        if (i == 1 && j == 1)
+                        {
+                            blockAtPos = 1;
+                        }
+                        else
+                        {
+                            blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
+                                    & 1;
+                            curr++;
+                        }
+
+                        if (blockAtPos)
+                        {
+                            ST7789_DrawRectangle(
+                            FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
+                                                 FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2,
+                                                 BLOCK_SIZE - 2, colors[curBlock]);
+                        }
+                    }
+                }
+                if (curBlock == LINE)
+                {
+                    if (ROT_VERTICAL)
+                    {
+                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                        FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[curBlock]);
                     }
                     else
                     {
-                        blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr) & 1;
-                        curr++;
-                    }
-
-                    if (blockAtPos)
-                    {
-                        // note: renders block gray if it just spawned and it caused a loss
-                        ST7789_DrawRectangle(
-                        FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
-                                             FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
-                                             BLOCK_SIZE - 2,
-                                             BLOCK_SIZE - 2, (resetting ? GRAY : colors[curBlock]));
+                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
+                        FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[curBlock]);
                     }
                 }
-            }
-            if (curBlock == LINE)
-            {
-                if (ROT_VERTICAL)
-                {
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2,
-                                         (resetting ? GRAY : colors[curBlock]));
-                }
-                else
-                {
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2,
-                                         (resetting ? GRAY : colors[curBlock]));
-                }
-            }
 
-            if (resetting)
-            {
-                G8RTOS_SignalSemaphore(&sem_lost);
-                continue;
             }
         }
 
@@ -1120,6 +1138,20 @@ void Get_Input_P()
     else
     {
         drop_released = true;
+    }
+
+    if (buttons & 8)
+    {
+        if (hold_released)
+        {
+            G8RTOS_WriteFIFO(0, MOVE_SWAP);
+            G8RTOS_WriteFIFO(0, MOVE_NONE);
+            hold_released = false;
+        }
+    }
+    else
+    {
+        hold_released = true;
     }
 
     G8RTOS_Yield();
