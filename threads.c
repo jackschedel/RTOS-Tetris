@@ -185,6 +185,12 @@ void FallingBlock_Thread()
 
     G8RTOS_Add_PeriodicEvent(Gravity_P, (uint32_t) START_SPEED, 50, GRAVITY_THREAD_ID);
 
+    if (level_num != 1)
+    {
+        float_t period = START_SPEED * pow((0.9), level_num) + (START_SPEED / 20.0);
+        G8RTOS_Change_Period(GRAVITY_THREAD_ID, (uint32_t) period);
+    }
+
     G8RTOS_WriteFIFO(0, 0);
 
     while (true)
@@ -1138,11 +1144,17 @@ void DrawUI_Thread()
         if (prevScore != score)
         {
             sprintf(numstr, "%u", score);
-            ST7789_DrawText(&FontStyle_Emulogic, (const char*) &numstr,
-            FRAME_X_OFF - (5 * FONT_WIDTH) - 2,
-                            FRAME_Y_OFF + 8 * BLOCK_SIZE - 2,
-                            ST7789_WHITE,
-                            ST7789_BLACK);
+            ST7789_DrawText(
+                    &FontStyle_Emulogic,
+                    (const char*) &numstr,
+                    FRAME_X_OFF - (5 * FONT_WIDTH) - 2 + FONT_WIDTH * 2
+                            - (score > 9 ? FONT_WIDTH / 2 : 0) - (score > 99 ? FONT_WIDTH / 2 : 0)
+                            - (score > 999 ? FONT_WIDTH / 2 : 0)
+                            - (score > 9999 ? FONT_WIDTH / 2 : 0)
+                            - (score > 99999 ? FONT_WIDTH : 0),
+                    FRAME_Y_OFF + 8 * BLOCK_SIZE - 2,
+                    ST7789_WHITE,
+                    ST7789_BLACK);
         }
 
         if (prevLevel != level_num)
