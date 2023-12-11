@@ -37,9 +37,9 @@
 #define JOYSTICK_MIDPOINT 2100
 #define JOYSTICK_DEADZONE 500
 #define NUM_SHAPES 7
-#define FRAME_X_OFF 30
+#define FRAME_X_OFF 50
 #define FRAME_Y_OFF 65
-#define BLOCK_SIZE 9
+#define BLOCK_SIZE 10
 #define DARK_GRAY 0x31A6
 #define GRAY 0xAD55
 
@@ -219,11 +219,9 @@ void FallingBlock_Thread()
                                 ST7789_DrawRectangle(
                                         FRAME_X_OFF + (COLS + 1 + i + xOffset) * BLOCK_SIZE + 1
                                                 + (previewBlock == LINE ? BLOCK_SIZE / 2 : 0),
-                                        FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1
-                                                - (BLOCK_SIZE / 2),
+                                        FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1,
                                         BLOCK_SIZE - 2,
-                                        BLOCK_SIZE - 2,
-                                        colors[previewBlock]);
+                                        BLOCK_SIZE - 2, colors[previewBlock]);
                             }
                             else
                             {
@@ -231,11 +229,9 @@ void FallingBlock_Thread()
                                         FRAME_X_OFF + (COLS + 1 + i + xOffset) * BLOCK_SIZE + 1
                                                 + ((previewBlock == LINE && i == 2) ?
                                                         (BLOCK_SIZE / 2) - 2 : 0),
-                                        FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1
-                                                - (BLOCK_SIZE / 2),
-                                        BLOCK_SIZE + ((previewBlock == LINE) ? 4 : 0),
-                                        BLOCK_SIZE,
-                                        0);
+                                        FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1,
+                                        BLOCK_SIZE + ((previewBlock == LINE) ? BLOCK_SIZE / 2 : 0),
+                                        BLOCK_SIZE, 0);
                             }
                         }
                     }
@@ -243,26 +239,23 @@ void FallingBlock_Thread()
                 if (previewBlock == LINE)
                 {
                     ST7789_DrawRectangle(
-                            FRAME_X_OFF + (COLS + 2 + xOffset) * BLOCK_SIZE + 1 + BLOCK_SIZE / 2,
-                            FRAME_Y_OFF + (ROWS - yOffset + 3) * BLOCK_SIZE + 1 - (BLOCK_SIZE / 2),
-                            BLOCK_SIZE - 2,
-                            BLOCK_SIZE - 2,
-                            colors[previewBlock]);
+                    FRAME_X_OFF + (COLS + 2 + xOffset) * BLOCK_SIZE + 1 + BLOCK_SIZE / 2,
+                                         FRAME_Y_OFF + (ROWS - yOffset + 3) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2,
+                                         BLOCK_SIZE - 2, colors[previewBlock]);
                 }
                 else
                 {
                     ST7789_DrawRectangle(
-                            FRAME_X_OFF + (COLS + 2 + xOffset) * BLOCK_SIZE + 1 + BLOCK_SIZE / 2,
-                            FRAME_Y_OFF + (ROWS - yOffset + 3) * BLOCK_SIZE + 1 - (BLOCK_SIZE / 2),
-                            BLOCK_SIZE - 2,
-                            BLOCK_SIZE - 2,
-                            0);
+                    FRAME_X_OFF + (COLS + 2 + xOffset) * BLOCK_SIZE + 1 + BLOCK_SIZE / 2,
+                                         FRAME_Y_OFF + (ROWS - yOffset + 3) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2,
+                                         BLOCK_SIZE - 2, 0);
                     ST7789_DrawRectangle(
-                            FRAME_X_OFF + (COLS + 3 + xOffset) * BLOCK_SIZE + -1,
-                            FRAME_Y_OFF + (ROWS - yOffset) * BLOCK_SIZE + 1 - (BLOCK_SIZE / 2),
-                            2,
-                            BLOCK_SIZE * 4,
-                            0);
+                    FRAME_X_OFF + (COLS + 3 + xOffset) * BLOCK_SIZE + -1,
+                                         FRAME_Y_OFF + (ROWS - yOffset) * BLOCK_SIZE + 1, 2,
+                                         BLOCK_SIZE * 4,
+                                         0);
                 }
             }
 
