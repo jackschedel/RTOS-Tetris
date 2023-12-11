@@ -135,12 +135,19 @@ void Lost_Thread()
         resetting = 0;
         G8RTOS_SignalSemaphore(&sem_update_ui);
 
-        ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2, FRAME_Y_OFF + 5 * BLOCK_SIZE - 2,
-                             5 * FONT_WIDTH, FONT_WIDTH, 0);
+        if (score != 0)
+        {
+            ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2,
+            FRAME_Y_OFF + 5 * BLOCK_SIZE - 2,
+                                 5 * FONT_WIDTH, FONT_WIDTH, 0);
+        }
 
-        ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2 - FONT_WIDTH,
-        FRAME_Y_OFF + 1 * BLOCK_SIZE - 2,
-                             6 * FONT_WIDTH, FONT_WIDTH, 0);
+        if (level_num != 1)
+        {
+            ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2 - FONT_WIDTH,
+            FRAME_Y_OFF + 1 * BLOCK_SIZE - 2,
+                                 6 * FONT_WIDTH, FONT_WIDTH, 0);
+        }
     }
 }
 
