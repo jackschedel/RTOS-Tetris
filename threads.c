@@ -22,6 +22,7 @@
 #include "MiscFunctions/LinAlg/inc/quaternions.h"
 #include "MiscFunctions/LinAlg/inc/vect3d.h"
 #include "MiscFunctions/Shapes/inc/cube.h"
+#include "./MultimodDrivers/fontlibrary.h"
 
 /************************************Includes***************************************/
 
@@ -37,7 +38,7 @@
 #define JOYSTICK_MIDPOINT 2100
 #define JOYSTICK_DEADZONE 500
 #define NUM_SHAPES 7
-#define FRAME_X_OFF 40
+#define FRAME_X_OFF 60
 #define FRAME_Y_OFF 83
 #define BLOCK_SIZE 10
 #define DARK_GRAY 0x31A6
@@ -53,6 +54,8 @@
 #define MOVE_ROTATE 4
 #define MOVE_INSTADROP 5
 #define MOVE_SWAP 6
+
+#define FONT_WIDTH 8
 
 #define STRAIGHT_UP blockRotation % 2 - 1
 #define HORIZONTAL 1
@@ -1110,9 +1113,51 @@ uint8_t is_dead = 0;
 
 void DrawUI_Thread()
 {
+    uint8_t prevScore = 255;
+    uint8_t prevLevel = 255;
+    char title[6];
+    char numstr[4];
+
+    sprintf(title, "SCORE");
+    ST7789_DrawText(&FontStyle_Emulogic, (const char*) &title,
+    FRAME_X_OFF - (5 * BLOCK_SIZE),
+                    FRAME_Y_OFF + 9 * BLOCK_SIZE,
+                    ST7789_WHITE,
+                    ST7789_BLACK);
+
+    sprintf(title, "LEVEL");
+    ST7789_DrawText(&FontStyle_Emulogic, (const char*) &title,
+    FRAME_X_OFF - (5 * BLOCK_SIZE),
+                    FRAME_Y_OFF + 3 * BLOCK_SIZE,
+                    ST7789_WHITE,
+                    ST7789_BLACK);
+
     while (true)
     {
-        ST7789_Fill(0);
+
+        if (prevScore != score)
+        {
+            sprintf(numstr, "%u", score);
+            ST7789_DrawText(&FontStyle_Emulogic, (const char*) &numstr,
+            FRAME_X_OFF - (4 * BLOCK_SIZE),
+                            FRAME_Y_OFF + 8 * BLOCK_SIZE,
+                            ST7789_WHITE,
+                            ST7789_BLACK);
+        }
+
+        if (prevLevel != level_num)
+        {
+            sprintf(numstr, "%u", level_num);
+            ST7789_DrawText(&FontStyle_Emulogic, (const char*) &numstr,
+            FRAME_X_OFF - (4 * BLOCK_SIZE),
+                            FRAME_Y_OFF + 2 * BLOCK_SIZE,
+                            ST7789_WHITE,
+                            ST7789_BLACK);
+        }
+
+        prevLevel = level_num;
+        prevScore = score;
+        G8RTOS_Yield();
     }
 }
 

@@ -69,11 +69,10 @@ int main(void)
     G8RTOS_InitFIFO(0);
     G8RTOS_InitFIFO(1);
 
+    G8RTOS_AddThread(DrawUI_Thread, 253, "UI", 1);
     G8RTOS_AddThread(FallingBlock_Thread, 252, "Fall", 2);
-    G8RTOS_AddThread(Lost_Thread, 250, "Lost", 1);
-
     G8RTOS_AddThread(StaticBlocks_Thread, 251, "Stat", 3);
-    //G8RTOS_AddThread(DrawUI_Thread, 250, "UI", 1);
+    G8RTOS_AddThread(Lost_Thread, 250, "Lost", 1);
 
     G8RTOS_Add_PeriodicEvent(Get_Input_P, 5, 50, 1);
     //JOYSTICK_IntEnable();
