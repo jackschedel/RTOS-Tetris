@@ -75,7 +75,7 @@ uint8_t curBlockInd = 0;
 
 unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
 unsigned char old_static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
-char piece_grab_bag[NUM_SHAPES] = { 0 };
+char piece_grab_bag[NUM_SHAPES * 2] = { 255 };
 
 /*************************************Defines***************************************/
 
@@ -1160,20 +1160,42 @@ void slideStaticBlocks(int8_t row)
 
 void randomiseGrabBag()
 {
-    for (uint8_t i = 0; i < NUM_SHAPES; i++)
+    uint8_t ind;
+
+    if (piece_grab_bag[0] == 255)
     {
-        piece_grab_bag[i] = 255;
+        for (uint8_t i = NUM_SHAPES; i < NUM_SHAPES * 2; i++)
+        {
+            piece_grab_bag[i] = 255;
+        }
+        // initial back gen
+        ind = SysTickValueGet() % NUM_SHAPES;
+        for (uint8_t i = 0; i < NUM_SHAPES; i++)
+        {
+            while (piece_grab_bag[NUM_SHAPES + ind] != 255)
+            {
+                ind = SysTickValueGet() % NUM_SHAPES;
+            }
+
+            piece_grab_bag[NUM_SHAPES + ind] = i;
+        }
     }
 
-    uint8_t ind = SysTickValueGet() % NUM_SHAPES;
     for (uint8_t i = 0; i < NUM_SHAPES; i++)
     {
-        while (piece_grab_bag[ind] != 255)
+        piece_grab_bag[i] = piece_grab_bag[NUM_SHAPES + i];
+        piece_grab_bag[NUM_SHAPES + i] = 255;
+    }
+
+    ind = SysTickValueGet() % NUM_SHAPES;
+    for (uint8_t i = 0; i < NUM_SHAPES; i++)
+    {
+        while (piece_grab_bag[NUM_SHAPES + ind] != 255)
         {
             ind = SysTickValueGet() % NUM_SHAPES;
         }
 
-        piece_grab_bag[ind] = i;
+        piece_grab_bag[NUM_SHAPES + ind] = i;
     }
 }
 
