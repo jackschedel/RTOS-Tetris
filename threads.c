@@ -52,6 +52,7 @@
 #define MOVE_DOWN 3
 #define MOVE_ROTATE 4
 #define MOVE_INSTADROP 5
+#define MOVE_SWAP 6
 
 #define STRAIGHT_UP blockRotation % 2 - 1
 #define HORIZONTAL 1
@@ -75,6 +76,8 @@ uint8_t timer = 0;
 uint32_t score = 0;
 uint8_t level_num = 1;
 uint8_t curBlockInd = 0;
+int8_t heldBlock = -1;
+uint8_t curBlock;
 
 unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
 unsigned char old_static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
@@ -96,6 +99,8 @@ void Lost_Thread()
     {
         G8RTOS_WaitSemaphore(&sem_lost);
 
+        G8RTOS_Sleep(800);
+
         for (uint8_t i = 0; i < BLOCKS_ARRAY_SIZE; i++)
         {
             static_blocks[i] = 0;
@@ -114,6 +119,7 @@ void Lost_Thread()
 
         randomiseGrabBag();
         curBlockInd = 0;
+        curBlock = piece_grab_bag[curBlockInd];
 
         G8RTOS_WriteFIFO(0, 0);
     }
@@ -148,7 +154,7 @@ void FallingBlock_Thread()
 
     randomiseGrabBag();
 
-    uint8_t curBlock = piece_grab_bag[curBlockInd];
+    curBlock = piece_grab_bag[curBlockInd];
 
     // https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
     // 1x4 is 5, 2x2 is 6
@@ -840,35 +846,59 @@ void FallingBlock_Thread()
             {
                 for (int8_t i = 0; i < 3; i++)
                 {
-                    if (!resetting)
+
+                    if (i == 1 && j == 1)
                     {
-                        if (i == 1 && j == 1)
-                        {
-                            blockAtPos = 1;
-                        }
-                        else
-                        {
-                            blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
-                                    & 1;
-                            curr++;
-                        }
+                        blockAtPos = 1;
+                    }
+                    else
+                    {
+                        blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr) & 1;
+                        curr++;
+                    }
 
-                        if (blockAtPos)
+                    if (blockAtPos)
+                    {
+                        if (move == MOVE_NONE && getStaticBlockBit(blockX + i, blockY + j))
                         {
-                            ST7789_DrawRectangle(
-                            FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
-                                                 FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
-                                                 BLOCK_SIZE - 2,
-                                                 BLOCK_SIZE - 2, colors[curBlock]);
-
-                            if (move == MOVE_NONE && getStaticBlockBit(blockX + i, blockY + j))
-                            {
-                                G8RTOS_SignalSemaphore(&sem_lost);
-                                resetting = 1;
-                            }
+                            resetting = 1;
                         }
                     }
                 }
+            }
+
+            curr = 0;
+            for (int8_t j = 2; j >= 0; j--)
+            {
+                for (int8_t i = 0; i < 3; i++)
+                {
+
+                    if (i == 1 && j == 1)
+                    {
+                        blockAtPos = 1;
+                    }
+                    else
+                    {
+                        blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr) & 1;
+                        curr++;
+                    }
+
+                    if (blockAtPos)
+                    {
+
+                        ST7789_DrawRectangle(
+                        FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
+                                             FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2,
+                                             BLOCK_SIZE - 2, (resetting ? GRAY : colors[curBlock]));
+                    }
+                }
+            }
+
+            if (resetting)
+            {
+                G8RTOS_SignalSemaphore(&sem_lost);
+                continue;
             }
 
             if (curBlock == LINE)
@@ -1030,6 +1060,7 @@ void DrawUI_Thread()
 uint16_t joy_released = 1;
 uint16_t rotate_released = 1;
 uint16_t drop_released = 1;
+uint16_t hold_released = 1;
 uint8_t joy_i = 0;
 
 void Get_Input_P()
@@ -1070,7 +1101,7 @@ void Get_Input_P()
         if (rotate_released)
         {
             rotate_released = false;
-            G8RTOS_WriteFIFO(0, 4);
+            G8RTOS_WriteFIFO(0, MOVE_ROTATE);
         }
     }
     else
@@ -1083,13 +1114,27 @@ void Get_Input_P()
         if (drop_released)
         {
 
-            G8RTOS_WriteFIFO(0, 5);
+            G8RTOS_WriteFIFO(0, MOVE_INSTADROP);
             drop_released = false;
         }
     }
     else
     {
         drop_released = true;
+    }
+
+    if (buttons & 6)
+    {
+        if (drop_released)
+        {
+            G8RTOS_WriteFIFO(0, MOVE_SWAP);
+            G8RTOS_WriteFIFO(0, MOVE_NONE);
+            hold_released = false;
+        }
+    }
+    else
+    {
+        hold_released = true;
     }
 
     G8RTOS_Yield();
