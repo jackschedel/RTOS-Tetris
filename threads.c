@@ -38,7 +38,7 @@
 #define JOYSTICK_DEADZONE 500
 #define NUM_SHAPES 7
 #define FRAME_X_OFF 40
-#define FRAME_Y_OFF 65
+#define FRAME_Y_OFF 83
 #define BLOCK_SIZE 10
 #define DARK_GRAY 0x31A6
 #define GRAY 0xAD55

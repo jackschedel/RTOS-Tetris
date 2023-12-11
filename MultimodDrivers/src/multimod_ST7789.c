@@ -20,8 +20,6 @@
 #include <driverlib/uart.h>
 #include <driverlib/pin_map.h>
 
-/************************************Includes***************************************/
-
 /***********************************Macro Defines***********************************/
 #ifndef _swap_int16_t
 #define _swap_int16_t(a, b) \
@@ -31,7 +29,6 @@
     b = t; \
 }
 #endif
-/***********************************Macro Defines***********************************/
 
 /********************************Private Functions**********************************/
 
@@ -105,32 +102,28 @@ uint8_t ST7789_ReadRegister(uint8_t data)
 // Return: void
 void ST7789_SetWindow(int16_t x, int16_t y, int16_t w, int16_t h)
 {
-    if (x < 0)
+    // Your code here!
+
+    // Check boundary conditions
+    if (x >= 0 && (x + w - 1) < X_MAX && y >= 0 && (y + h - 1) < Y_MAX)
     {
-        x = 0;
+        // Set column address (x + w);
+        ST7789_WriteCommand(ST7789_CASET_ADDR);
+        ST7789_WriteData(x >> 8 & 0xFF);
+        ST7789_WriteData(x & 0xFF);
+        ST7789_WriteData((x + w - 1) >> 8 & 0xFF);
+        ST7789_WriteData((x + w - 1) & 0xFF);
+
+        // Set row address
+        ST7789_WriteCommand(ST7789_RASET_ADDR);
+        ST7789_WriteData(y >> 8 & 0xFF);
+        ST7789_WriteData(y & 0xFF);
+        ST7789_WriteData((y + h - 1) >> 8 & 0xFF);
+        ST7789_WriteData((y + h - 1) & 0xFF);
+
+        // Set register to write to as memory
+        ST7789_WriteCommand(ST7789_RAMWR_ADDR);
     }
-
-    if (y < 0)
-    {
-        y = 0;
-    }
-
-    // offset y by 20
-    y += 20;
-
-    ST7789_WriteCommand(ST7789_CASET_ADDR);
-    ST7789_WriteData((x >> 8) & 0xFF);
-    ST7789_WriteData((x >> 0) & 0xFF);
-    ST7789_WriteData(((x + w - 1) >> 8) & 0xFF);
-    ST7789_WriteData(((x + w - 1) >> 0) & 0xFF);
-
-    ST7789_WriteCommand(ST7789_RASET_ADDR);
-    ST7789_WriteData((y >> 8) & 0xFF);
-    ST7789_WriteData((y >> 0) & 0xFF);
-    ST7789_WriteData(((y + h - 1) >> 8) & 0xFF);
-    ST7789_WriteData(((y + h - 1) >> 0) & 0xFF);
-
-    ST7789_WriteCommand(ST7789_RAMWR_ADDR);
 }
 
 // ST7789_DrawVLine
@@ -256,8 +249,6 @@ void delay_ms(uint32_t ms)
     SysCtlDelay((SysCtlClockGet() / (3 * 1000)) * ms + 1);
 }
 
-/********************************Private Functions**********************************/
-
 /********************************Public Functions***********************************/
 
 // ST7789_Init
@@ -324,11 +315,14 @@ void ST7789_Init()
 // Return: void
 void ST7789_DrawPixel(uint16_t x, uint16_t y, uint16_t color)
 {
+    // Check boundary conditions
     if (x < X_MAX && y < Y_MAX)
     {
         ST7789_Select();
+        // Set window
         ST7789_SetWindow(x, y, 1, 1);
-        ST7789_WriteData(color >> 8);
+        // Set color
+        ST7789_WriteData((color >> 8) & 0xFF);
         ST7789_WriteData(color & 0xFF);
         ST7789_Deselect();
     }
@@ -380,31 +374,10 @@ void ST7789_DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_
 // Param uint16_t h: height of retangle.
 // Param uint16_t color: color of line.
 // Return: void
-void ST7789_DrawRectangle(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
+void ST7789_DrawRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color)
 {
     uint8_t color_hi, color_lo;
     ST7789_Select();
-
-    if (x < 0)
-    {
-        w += x;
-    }
-
-    if (x + w > X_MAX)
-    {
-        w -= x + w - X_MAX;
-    }
-
-    if (y < 0)
-    {
-        h += y;
-    }
-
-    if (y + h > Y_MAX)
-    {
-        h -= y + h - Y_MAX;
-    }
-
     ST7789_SetWindow(x, y, w, h);
 
     color_hi = color >> 8;
@@ -419,5 +392,60 @@ void ST7789_DrawRectangle(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c
     ST7789_Deselect();
 }
 
-/********************************Public Functions***********************************/
+const uint8_t* ST7789_GetCharGlyph(const fontStyle_t *font, char c)
+{
+    int low = 0;
+    int high = font->GlyphCount - 1;
+
+    while (low <= high)
+    {
+        int mid = low + (high - low) / 2;
+        char midChar = font->FirstAsciiCode + mid;
+
+        if (midChar < c)
+            low = mid + 1;
+        else if (midChar > c)
+            high = mid - 1;
+        else
+        {
+            // Found the glyph
+            return &(font->GlyphBitmaps[(mid + 1) * font->GlyphBytesWidth * font->GlyphHeight
+                    - font->GlyphBytesWidth]);
+        }
+    }
+
+    // Glyph not found
+    return NULL;
+}
+
+void ST7789_DrawText(const fontStyle_t *font, const char *text, uint16_t x, uint16_t y,
+                     uint16_t color, uint16_t bgColor)
+{
+    while (*text)
+    {
+        const uint8_t *glyph = ST7789_GetCharGlyph(font, *text);
+        if (glyph)
+        {
+            for (uint16_t row = 0; row < font->GlyphHeight; row++)
+            {
+                uint8_t rowData = *glyph;
+
+                for (uint8_t col = 0; col < font->FixedWidth; col++)
+                {
+                    if (rowData & (0x80 >> col))
+                    {
+                        ST7789_DrawPixel(x + col, y + row, color);
+                    }
+                    else
+                    {
+                        ST7789_DrawPixel(x + col, y + row, bgColor);
+                    }
+                }
+                glyph -= font->GlyphBytesWidth;
+            }
+            x += font->FixedWidth;
+        }
+        text++;
+    }
+}
 

@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include "fontlibrary.h"
 
 /************************************Includes***************************************/
 
@@ -76,13 +78,17 @@
 
 // ST7789 Boundaries
 #define X_MAX                       240
-#define Y_MAX                       280
+#define Y_MAX                       320
 
 // COLORS
 #define ST7789_BLACK                0x0000
 #define ST7789_RED                  0x001F
 #define ST7789_BLUE                 0xF800
 #define ST7789_GREEN                0x07E0
+#define ST7789_YELLOW               0x07FF
+#define ST7789_CYAN                 0xFFE0
+#define ST7789_WHITE                0xFFFF
+#define ST7789_MAGENTA              0xF81F
 
 /*************************************Defines***************************************/
 
@@ -106,7 +112,9 @@ uint8_t ST7789_ReadRegister(uint8_t addr);
 void ST7789_Fill(uint16_t color);
 void ST7789_DrawPixel(uint16_t x, uint16_t y, uint16_t color);
 void ST7789_DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color);
-void ST7789_DrawRectangle(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+void ST7789_DrawRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
+void ST7789_DrawText(const fontStyle_t *font, const char *text, uint16_t x, uint16_t y,
+                     uint16_t color, uint16_t bgColor);
 
 /********************************Public Functions***********************************/
 
@@ -117,3 +125,4 @@ void ST7789_DrawRectangle(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c
 /*******************************Private Functions***********************************/
 
 #endif /* MULTIMOD_ST7789_H_ */
+
