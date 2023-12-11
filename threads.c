@@ -143,6 +143,8 @@ void FallingBlock_Thread()
 
     renderCrosshatchGrid();
 
+    randomiseGrabBag();
+
     uint8_t curBlock = piece_grab_bag[curBlockInd];
 
     // https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
@@ -162,8 +164,6 @@ void FallingBlock_Thread()
                                               0b01010100, 0b00010110, 0b01000010 } };
 
     G8RTOS_WriteFIFO(0, 0);
-
-    randomiseGrabBag();
 
     while (true)
     {
@@ -188,6 +188,10 @@ void FallingBlock_Thread()
             else if (curBlock == 5)
             {
                 blockX++;
+            }
+            else if (curBlock == 6)
+            {
+                blockY--;
             }
 
             reRenderBlock = 1;
