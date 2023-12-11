@@ -188,24 +188,6 @@ void FallingBlock_Thread()
             uint8_t pieceOffset = 1;
             uint8_t previewBlock = piece_grab_bag[(curBlockInd + pieceOffset) % NUM_SHAPES];
 
-            for (int8_t j = 2; j >= 0; j--)
-            {
-                for (int8_t i = 0; i < 3; i++)
-                {
-                    ST7789_DrawRectangle(
-                    FRAME_X_OFF + (COLS + 1 + i + xOffset) * BLOCK_SIZE + 1,
-                                         FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2,
-                                         BLOCK_SIZE - 2, 0);
-                }
-            }
-
-            if (previewBlock == SQUARE)
-            {
-                yOffset--;
-                xOffset++;
-            }
-
             curr = 0;
             for (int8_t j = 2; j >= 0; j--)
             {
@@ -219,7 +201,8 @@ void FallingBlock_Thread()
                         }
                         else
                         {
-                            blockAtPos = shapes[1][previewBlock] >> (7 - curr) & 1;
+                            blockAtPos = shapes[1][previewBlock]
+                                    >> (previewBlock == SQUARE ? curr : 7 - curr) & 1;
                             curr++;
                         }
 
@@ -232,14 +215,17 @@ void FallingBlock_Thread()
                                     BLOCK_SIZE - 2,
                                     colors[previewBlock]);
                         }
+                        else
+                        {
+                            ST7789_DrawRectangle(
+                                    FRAME_X_OFF + (COLS + 1 + i + xOffset) * BLOCK_SIZE + 1,
+                                    FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1,
+                                    BLOCK_SIZE - 2,
+                                    BLOCK_SIZE - 2,
+                                    0);
+                        }
                     }
                 }
-            }
-
-            if (previewBlock == SQUARE)
-            {
-                yOffset++;
-                xOffset--;
             }
 
             if (previewBlock == LINE)
