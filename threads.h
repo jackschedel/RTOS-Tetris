@@ -39,6 +39,7 @@ void renderCrosshatchGrid();
 uint8_t staticCheckClear(int8_t row);
 void slideStaticBlocks(int8_t row);
 uint8_t getOldStaticBlockBit(int8_t col, int8_t row);
+void randomiseGrabBag();
 
 /********************************Thread Functions***********************************/
 

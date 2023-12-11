@@ -72,6 +72,7 @@ uint8_t level_num = 1;
 
 unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
 unsigned char old_static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
+char piece_grab_bag[NUM_SHAPES] = { 0 };
 
 /*************************************Defines***************************************/
 
@@ -105,13 +106,15 @@ void Lost_Thread()
 
         renderCrosshatchGrid();
 
+        randomiseGrabBag();
+
         G8RTOS_WriteFIFO(0, 0);
     }
 }
 
 void FallingBlock_Thread()
 {
-    uint8_t curBlock = 6;
+    uint8_t curBlockInd = 0;
 
     uint8_t reRenderBlock = 1;
 
@@ -138,6 +141,8 @@ void FallingBlock_Thread()
 
     renderCrosshatchGrid();
 
+    uint8_t curBlock = piece_grab_bag[curBlockInd];
+
     // https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
     // 1x4 is 5, 2x2 is 6
 
@@ -155,6 +160,8 @@ void FallingBlock_Thread()
                                               0b01010100, 0b00010110, 0b01000010 } };
 
     G8RTOS_WriteFIFO(0, 0);
+
+    randomiseGrabBag();
 
     while (true)
     {
@@ -796,13 +803,18 @@ void FallingBlock_Thread()
                 G8RTOS_Yield();
             }
 
-            curBlock++;
+            curBlockInd++;
+
+            if (curBlockInd >= NUM_SHAPES)
+            {
+                randomiseGrabBag();
+                curBlockInd = 0;
+            }
+
+            curBlock = piece_grab_bag[curBlockInd];
             blockRotation = 1;
             blockY = START_Y;
             blockX = START_X;
-
-            if (curBlock >= NUM_SHAPES)
-                curBlock = 0;
 
             piecePlaced = 0;
 
@@ -1077,6 +1089,25 @@ void slideStaticBlocks(int8_t row)
     for (uint8_t c = 0; c < COLS; c++)
     {
         setStaticBlockBit(c, ROWS - 1, 0, 0);
+    }
+}
+
+void randomiseGrabBag()
+{
+    for (uint8_t i = 0; i < NUM_SHAPES; i++)
+    {
+        piece_grab_bag[i] = 255;
+    }
+
+    uint8_t ind = SysTickValueGet() % NUM_SHAPES;
+    for (uint8_t i = 0; i < NUM_SHAPES; i++)
+    {
+        while (piece_grab_bag[ind] != 255)
+        {
+            ind = SysTickValueGet() % NUM_SHAPES;
+        }
+
+        piece_grab_bag[ind] = i;
     }
 }
 
