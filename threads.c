@@ -1035,13 +1035,9 @@ void setStaticBlockBit(int8_t col, int8_t row, int8_t value, uint8_t canLose)
 
 uint8_t getStaticBlockBit(int8_t col, int8_t row)
 {
-    if (row < 0 || col < 0 || col >= COLS)
+    if (row >= ROWS || row < 0 || col < 0 || col >= COLS)
     {
         return 1;
-    }
-    else if (row >= ROWS)
-    {
-        return 0;
     }
     int bitIndex = row * COLS + col;
     int byteIndex = bitIndex / BITS_PER_BYTE;
