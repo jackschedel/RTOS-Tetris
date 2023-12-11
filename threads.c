@@ -190,8 +190,7 @@ void FallingBlock_Thread()
         wallKick = 0;
         if (move == MOVE_NONE)
         {
-            // piece lookahead
-
+            // piece lookahead start
             int8_t yOffset = -1;
             int8_t xOffset = -1;
             uint8_t pieceOffset = 0;
@@ -264,7 +263,9 @@ void FallingBlock_Thread()
                                          0);
                 }
             }
+            // end piece lookahead
 
+            // piece offset override on spawn
             if (curBlock <= 4)
             {
                 blockY--;
@@ -275,6 +276,7 @@ void FallingBlock_Thread()
             }
             else if (curBlock == 6)
             {
+                // 1x4 spawn adjust if second-to-last is filled
                 if (!getStaticBlockBit(blockX, blockY) && !getStaticBlockBit(blockX + 1, blockY)
                         && !getStaticBlockBit(blockX + 2, blockY)
                         && !getStaticBlockBit(blockX + 3, blockY))
@@ -321,7 +323,6 @@ void FallingBlock_Thread()
 
             if (curBlock == LINE && ROT_VERTICAL)
             {
-
                 if (getStaticBlockBit(blockX, blockY + 3))
                 {
                     reRenderBlock = 0;
@@ -357,7 +358,6 @@ void FallingBlock_Thread()
             {
                 if (ROT_VERTICAL)
                 {
-
                     if (getStaticBlockBit(blockX + 2, blockY + 3))
                     {
                         reRenderBlock = 0;
@@ -365,7 +365,6 @@ void FallingBlock_Thread()
                 }
                 else
                 {
-
                     if (getStaticBlockBit(blockX + 4, blockY + 1))
                     {
                         reRenderBlock = 0;
@@ -402,7 +401,6 @@ void FallingBlock_Thread()
             {
                 if (blockRotation % 2)
                 {
-
                     if (getStaticBlockBit(blockX + 3, blockY))
                     {
                         reRenderBlock = 0;
@@ -412,6 +410,7 @@ void FallingBlock_Thread()
 
             if (!reRenderBlock)
             {
+                // place static piece if hit
                 piecePlaced = 1;
                 curr = 0;
                 for (int8_t j = 2; j >= 0; j--)
@@ -446,7 +445,6 @@ void FallingBlock_Thread()
                 {
                     if (ROT_VERTICAL)
                     {
-
                         ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
@@ -454,7 +452,6 @@ void FallingBlock_Thread()
                     }
                     else
                     {
-
                         ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, GRAY);
@@ -465,7 +462,7 @@ void FallingBlock_Thread()
         }
         else if (move == MOVE_ROTATE)
         {
-
+            // line rotation offset for proper SRS-compliant rotation
             if (curBlock == LINE)
             {
                 if (blockRotation == 1)
@@ -487,6 +484,7 @@ void FallingBlock_Thread()
             if (blockRotation > 4)
                 blockRotation = 1;
 
+            // check if rotation would hit anything
             reRenderBlock = 1;
             curr = 0;
             for (int8_t j = 2; j >= 0; j--)
@@ -524,7 +522,6 @@ void FallingBlock_Thread()
                 }
                 else
                 {
-
                     if (getStaticBlockBit(blockX + 3, blockY + 1))
                     {
                         reRenderBlock = 0;
@@ -532,6 +529,7 @@ void FallingBlock_Thread()
                 }
             }
 
+            // if rotation failed, try wallkick #1: try moving block left 1 unit, then rotating
             if (!reRenderBlock)
             {
                 reRenderBlock = 1;
@@ -565,7 +563,6 @@ void FallingBlock_Thread()
                 {
                     if (ROT_VERTICAL)
                     {
-
                         if (getStaticBlockBit(blockX + 1, blockY + 3))
                         {
                             reRenderBlock = 0;
@@ -573,7 +570,6 @@ void FallingBlock_Thread()
                     }
                     else
                     {
-
                         if (getStaticBlockBit(blockX + 3, blockY + 1))
                         {
                             reRenderBlock = 0;
@@ -581,6 +577,7 @@ void FallingBlock_Thread()
                     }
                 }
 
+                // if wallkick worked, will be rendered later in reRenderBlock section
                 if (reRenderBlock)
                 {
                     wallKick = -1;
@@ -588,6 +585,7 @@ void FallingBlock_Thread()
                 blockX++;
             }
 
+            // if wallkick try #1 failed, try wallkick #2: try moving block right 1 unit (from original), then rotating
             if (!reRenderBlock)
             {
                 reRenderBlock = 1;
@@ -621,7 +619,6 @@ void FallingBlock_Thread()
                 {
                     if (ROT_VERTICAL)
                     {
-
                         if (getStaticBlockBit(blockX + 1, blockY + 3))
                         {
                             reRenderBlock = 0;
@@ -629,13 +626,14 @@ void FallingBlock_Thread()
                     }
                     else
                     {
-
                         if (getStaticBlockBit(blockX + 3, blockY + 1))
                         {
                             reRenderBlock = 0;
                         }
                     }
                 }
+
+                // if wallkick worked, will be rendered later in reRenderBlock section
                 if (reRenderBlock)
                 {
                     wallKick = 1;
@@ -643,11 +641,13 @@ void FallingBlock_Thread()
                 blockX--;
             }
 
+            // because 1x4 has special rotation properties, it will always be rendered in reRenderBlock section
             if (!wallKick && curBlock == LINE)
             {
                 wallKick = EMPTY_WALLKICK;
             }
 
+            // if rotation was invalid and neither wallkick try worked, undo the rotation
             if (!reRenderBlock || wallKick)
             {
                 blockRotation--;
@@ -673,6 +673,7 @@ void FallingBlock_Thread()
                 }
             }
 
+            // render normal rotation (i.e. if no wallkick and not 1x4)
             if (reRenderBlock && !wallKick)
             {
                 curr = 0;
@@ -684,10 +685,8 @@ void FallingBlock_Thread()
                         {
                             blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
                                     & 1;
-
                             prevBlockAtPos = shapes[(blockRotation + 2) % 4][curBlock] >> (7 - curr)
                                     & 1;
-
                             curr++;
 
                             if (blockAtPos && !prevBlockAtPos)
@@ -697,7 +696,6 @@ void FallingBlock_Thread()
                                                      FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
                                                      BLOCK_SIZE - 2,
                                                      BLOCK_SIZE - 2, colors[curBlock]);
-
                             }
                             else if (!blockAtPos && prevBlockAtPos)
                             {
@@ -719,7 +717,6 @@ void FallingBlock_Thread()
                                              FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2,
                                              BLOCK_SIZE - 2, 0);
-
                         ST7789_DrawRectangle(
                         FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
                                              FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
@@ -733,7 +730,6 @@ void FallingBlock_Thread()
                                              FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2,
                                              BLOCK_SIZE - 2, 0);
-
                         ST7789_DrawRectangle(
                         FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
                                              FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
@@ -745,8 +741,10 @@ void FallingBlock_Thread()
             }
         }
 
+        // all block rendering but normal rotation and static piece creation done here
         if (reRenderBlock)
         {
+            // clear previous block
             if (move != MOVE_NONE)
             {
                 curr = 0;
@@ -779,14 +777,12 @@ void FallingBlock_Thread()
                 {
                     if (ROT_VERTICAL)
                     {
-
                         ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
                     }
                     else
                     {
-
                         ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
                         FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
                                              BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
@@ -794,6 +790,7 @@ void FallingBlock_Thread()
                 }
             }
 
+            // do move coords/rotation transformation
             if (move == MOVE_LEFT)
             {
                 blockX--;
@@ -808,12 +805,6 @@ void FallingBlock_Thread()
             }
             else if (move == MOVE_ROTATE)
             {
-                if (!wallKick)
-                {
-                    // then i coded it wrong lol
-                    abort();
-                }
-
                 if (wallKick != EMPTY_WALLKICK)
                 {
                     blockX += wallKick;
@@ -841,12 +832,12 @@ void FallingBlock_Thread()
                     blockRotation = 1;
             }
 
+            // if spawning a new piece, check if the player lost
             curr = 0;
             for (int8_t j = 2; j >= 0; j--)
             {
                 for (int8_t i = 0; i < 3; i++)
                 {
-
                     if (i == 1 && j == 1)
                     {
                         blockAtPos = 1;
@@ -867,6 +858,7 @@ void FallingBlock_Thread()
                 }
             }
 
+            // render new block
             curr = 0;
             for (int8_t j = 2; j >= 0; j--)
             {
@@ -885,7 +877,7 @@ void FallingBlock_Thread()
 
                     if (blockAtPos)
                     {
-
+                        // note: renders block gray if it just spawned and it caused a loss
                         ST7789_DrawRectangle(
                         FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
                                              FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
@@ -894,44 +886,45 @@ void FallingBlock_Thread()
                     }
                 }
             }
+            if (curBlock == LINE)
+            {
+                if (ROT_VERTICAL)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2,
+                                         (resetting ? GRAY : colors[curBlock]));
+                }
+                else
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2,
+                                         (resetting ? GRAY : colors[curBlock]));
+                }
+            }
 
             if (resetting)
             {
                 G8RTOS_SignalSemaphore(&sem_lost);
                 continue;
             }
-
-            if (curBlock == LINE)
-            {
-                if (ROT_VERTICAL)
-                {
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 3) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[curBlock]);
-                }
-                else
-                {
-
-                    ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
-                    FRAME_Y_OFF + (blockY + 1) * BLOCK_SIZE + 1,
-                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[curBlock]);
-                }
-            }
-
         }
 
+        // piece placed logic
         if (piecePlaced)
         {
             if (!resetting)
             {
+                // spawn new block eventually (once StaticBlocks is done)
                 G8RTOS_WriteFIFO(0, MOVE_NONE);
+
+                // check for line clear
                 G8RTOS_SignalSemaphore(&sem_clearLine);
                 G8RTOS_Yield();
             }
 
             curBlockInd++;
-
             if (curBlockInd >= NUM_SHAPES)
             {
                 curBlockInd = 0;
@@ -945,6 +938,7 @@ void FallingBlock_Thread()
                 randomiseGrabBag();
             }
 
+            // reset coords for newly spawned block
             blockRotation = 1;
             blockY = START_Y;
             blockX = START_X;
@@ -954,6 +948,7 @@ void FallingBlock_Thread()
         }
         else if (instaDrop)
         {
+            // chain trigger another instadrop if the piece hasn't been placed yet
             G8RTOS_WriteFIFO(0, 5);
         }
 
@@ -972,8 +967,8 @@ void StaticBlocks_Thread()
     {
         G8RTOS_WaitSemaphore(&sem_clearLine);
 
+        // check the number of lines cleared in this drop
         numCleared = 0;
-
         for (i = blockY + 3; i >= blockY; i--)
         {
             if (i >= ROWS)
@@ -988,7 +983,6 @@ void StaticBlocks_Thread()
                         old_static_blocks[j] = static_blocks[j];
                     }
                 }
-
                 numCleared++;
                 slideStaticBlocks(i);
             }
@@ -997,6 +991,7 @@ void StaticBlocks_Thread()
         if (!numCleared)
             continue;
 
+        // update score
         if (numCleared == 1)
         {
             score += 100 * level_num;
@@ -1014,13 +1009,16 @@ void StaticBlocks_Thread()
             score += 800 * level_num;
         }
 
+        // shift down the static blocks
         for (++i; i < ROWS - numCleared; i++)
         {
             for (j = 0; j < COLS; j++)
             {
+                // shift staticBlocksArr
                 old = getOldStaticBlockBit(j, i);
                 shifted = getStaticBlockBit(j, i);
 
+                // render changes in static blocks
                 if (!shifted && old)
                     ST7789_DrawRectangle(FRAME_X_OFF + j * BLOCK_SIZE + 1,
                     FRAME_Y_OFF + i * BLOCK_SIZE + 1,
@@ -1032,6 +1030,7 @@ void StaticBlocks_Thread()
             }
         }
 
+        // clear the top rows
         for (i = ROWS - 1; i <= ROWS - numCleared; i++)
         {
             for (j = 0; j < COLS; j++)
@@ -1121,20 +1120,6 @@ void Get_Input_P()
     else
     {
         drop_released = true;
-    }
-
-    if (buttons & 6)
-    {
-        if (drop_released)
-        {
-            G8RTOS_WriteFIFO(0, MOVE_SWAP);
-            G8RTOS_WriteFIFO(0, MOVE_NONE);
-            hold_released = false;
-        }
-    }
-    else
-    {
-        hold_released = true;
     }
 
     G8RTOS_Yield();
