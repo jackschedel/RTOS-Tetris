@@ -14,8 +14,6 @@
 #include "./MultimodDrivers/multimod.h"
 #include <driverlib/uart.h>
 #include <driverlib/uartstdio.h>
-#include <driverlib/sysctl.h>
-#include <driverlib/systick.h>
 
 #include "./threads.h"
 #include "./G8RTOS/G8RTOS_IPC.h"

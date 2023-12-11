@@ -10,6 +10,8 @@
 #include <driverlib/uart.h>
 #include <driverlib/interrupt.h>
 #include <driverlib/uartstdio.h>
+#include <driverlib/sysctl.h>
+#include <driverlib/systick.h>
 #include "./G8RTOS/G8RTOS_Scheduler.h"
 #include "./G8RTOS/G8RTOS_IPC.h"
 #include "./G8RTOS/G8RTOS_CriticalSection.h"
@@ -69,6 +71,7 @@ uint8_t resetting = 0;
 uint8_t timer = 0;
 uint32_t score = 0;
 uint8_t level_num = 1;
+uint8_t curBlockInd = 0;
 
 unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
 unsigned char old_static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
@@ -107,6 +110,7 @@ void Lost_Thread()
         renderCrosshatchGrid();
 
         randomiseGrabBag();
+        curBlockInd = 0;
 
         G8RTOS_WriteFIFO(0, 0);
     }
@@ -114,8 +118,6 @@ void Lost_Thread()
 
 void FallingBlock_Thread()
 {
-    uint8_t curBlockInd = 0;
-
     uint8_t reRenderBlock = 1;
 
     uint8_t piecePlaced = 0;
@@ -807,11 +809,17 @@ void FallingBlock_Thread()
 
             if (curBlockInd >= NUM_SHAPES)
             {
-                randomiseGrabBag();
                 curBlockInd = 0;
             }
 
             curBlock = piece_grab_bag[curBlockInd];
+
+            // re-random 1 early to allow lookahead on edge
+            if (curBlockInd == NUM_SHAPES - 1)
+            {
+                randomiseGrabBag();
+            }
+
             blockRotation = 1;
             blockY = START_Y;
             blockX = START_X;
