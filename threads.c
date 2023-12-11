@@ -133,6 +133,14 @@ void Lost_Thread()
 
         G8RTOS_WriteFIFO(0, 0);
         resetting = 0;
+        G8RTOS_SignalSemaphore(&sem_update_ui);
+
+        ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2, FRAME_Y_OFF + 5 * BLOCK_SIZE - 2,
+                             5 * FONT_WIDTH, FONT_WIDTH, 0);
+
+        ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2 - FONT_WIDTH,
+        FRAME_Y_OFF + 1 * BLOCK_SIZE - 2,
+                             6 * FONT_WIDTH, FONT_WIDTH, 0);
     }
 }
 
@@ -167,13 +175,13 @@ void FallingBlock_Thread()
 
     curBlock = piece_grab_bag[curBlockInd];
 
-    // https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
-    // 1x4 is 5, 2x2 is 6
+// https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
+// 1x4 is 5, 2x2 is 6
 
-    // 3x3 grid (middle always filled)
-    // 0 1 2
-    // 3 F 4
-    // 5 6 7
+// 3x3 grid (middle always filled)
+// 0 1 2
+// 3 F 4
+// 5 6 7
     unsigned char shapes[4][NUM_SHAPES] = { { 0b10011000, 0b00111000, 0b01110000, 0b01011000,
                                               0b11001000, 0b00010110, 0b00011000 },
                                             { 0b01100010, 0b01000011, 0b01001001, 0b01001010,
@@ -1043,6 +1051,8 @@ void StaticBlocks_Thread()
             }
         }
 
+        G8RTOS_SignalSemaphore(&sem_update_ui);
+
         if (!numCleared)
             continue;
 
@@ -1127,19 +1137,20 @@ void DrawUI_Thread()
     sprintf(title, "SCORE");
     ST7789_DrawText(&FontStyle_Emulogic, (const char*) &title,
     FRAME_X_OFF - (5 * FONT_WIDTH) - 2,
-                    FRAME_Y_OFF + 9 * BLOCK_SIZE,
+                    FRAME_Y_OFF + 6 * BLOCK_SIZE,
                     ST7789_WHITE,
                     ST7789_BLACK);
 
     sprintf(title, "LEVEL");
     ST7789_DrawText(&FontStyle_Emulogic, (const char*) &title,
     FRAME_X_OFF - (5 * FONT_WIDTH) - 2,
-                    FRAME_Y_OFF + 3 * BLOCK_SIZE,
+                    FRAME_Y_OFF + 2 * BLOCK_SIZE,
                     ST7789_WHITE,
                     ST7789_BLACK);
 
     while (true)
     {
+        G8RTOS_WaitSemaphore(&sem_update_ui);
 
         if (prevScore != score)
         {
@@ -1152,7 +1163,7 @@ void DrawUI_Thread()
                             - (score > 999 ? FONT_WIDTH / 2 : 0)
                             - (score > 9999 ? FONT_WIDTH / 2 : 0)
                             - (score > 99999 ? FONT_WIDTH : 0),
-                    FRAME_Y_OFF + 8 * BLOCK_SIZE - 2,
+                    FRAME_Y_OFF + 5 * BLOCK_SIZE - 2,
                     ST7789_WHITE,
                     ST7789_BLACK);
         }
@@ -1165,7 +1176,7 @@ void DrawUI_Thread()
                     (const char*) &numstr,
                     FRAME_X_OFF - (5 * FONT_WIDTH)
                             + (level_num > 9 ? FONT_WIDTH + FONT_WIDTH / 2 : FONT_WIDTH * 2) - 2,
-                    FRAME_Y_OFF + 2 * BLOCK_SIZE - 2,
+                    FRAME_Y_OFF + 1 * BLOCK_SIZE - 2,
                     ST7789_WHITE,
                     ST7789_BLACK);
         }

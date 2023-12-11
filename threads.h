@@ -17,6 +17,7 @@ semaphore_t sem_UART;
 semaphore_t sem_gameEnd;
 semaphore_t sem_clearLine;
 semaphore_t sem_lost;
+semaphore_t sem_update_ui;
 
 /***********************************Semaphores**************************************/
 
