@@ -37,7 +37,7 @@
 #define JOYSTICK_MIDPOINT 2100
 #define JOYSTICK_DEADZONE 500
 #define NUM_SHAPES 7
-#define FRAME_X_OFF 50
+#define FRAME_X_OFF 40
 #define FRAME_Y_OFF 65
 #define BLOCK_SIZE 10
 #define DARK_GRAY 0x31A6
@@ -190,17 +190,27 @@ void FallingBlock_Thread()
         wallKick = 0;
         if (move == MOVE_NONE)
         {
-            // piece lookahead start
+            // rendering for held piece and lookahead preview
             int8_t yOffset = -1;
             int8_t xOffset = -1;
             uint8_t pieceOffset = 0;
             uint8_t previewBlock;
 
-            for (int8_t k = 0; k < PREVIEW_COUNT; k++)
+            for (int8_t k = 0; k <= PREVIEW_COUNT; k++)
             {
-                pieceOffset++;
-                previewBlock = piece_grab_bag[(curBlockInd + pieceOffset) % NUM_SHAPES];
+                // when k == 0, we are rendering the held piece
+                if (k == 0)
+                {
+                    previewBlock = heldBlock;
+                    xOffset = -(COLS + 5);
+                }
+                else
+                {
+                    pieceOffset++;
+                    previewBlock = piece_grab_bag[(curBlockInd + pieceOffset) % NUM_SHAPES];
+                }
                 yOffset += 5;
+
                 curr = 0;
                 for (int8_t j = 2; j >= 0; j--)
                 {
@@ -262,8 +272,12 @@ void FallingBlock_Thread()
                                          BLOCK_SIZE * 4,
                                          0);
                 }
+                if (k == 0)
+                {
+                    yOffset = -1;
+                    xOffset = -1;
+                }
             }
-            // end piece lookahead
 
             // piece offset override on spawn
             if (curBlock <= 4)
