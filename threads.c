@@ -62,6 +62,9 @@
 
 #define ROT_VERTICAL (blockRotation - 1) % 2
 
+// maximum value is NUM_SHAPES
+#define PREVIEW_COUNT 4
+
 uint8_t point_count = 0;
 uint8_t line_count = 1;
 uint8_t blockRotation = 1;
@@ -183,62 +186,67 @@ void FallingBlock_Thread()
         {
             // piece lookahead
 
-            int8_t yOffset = 4;
+            int8_t yOffset = -1;
             int8_t xOffset = -1;
-            uint8_t pieceOffset = 1;
-            uint8_t previewBlock = piece_grab_bag[(curBlockInd + pieceOffset) % NUM_SHAPES];
+            uint8_t pieceOffset = 0;
+            uint8_t previewBlock;
 
-            curr = 0;
-            for (int8_t j = 2; j >= 0; j--)
+            for (int8_t k = 0; k < PREVIEW_COUNT; k++)
             {
-                for (int8_t i = 0; i < 3; i++)
+                pieceOffset++;
+                previewBlock = piece_grab_bag[(curBlockInd + pieceOffset) % NUM_SHAPES];
+                yOffset += 5;
+                curr = 0;
+                for (int8_t j = 2; j >= 0; j--)
                 {
-                    if (!resetting)
+                    for (int8_t i = 0; i < 3; i++)
                     {
-                        if (i == 1 && j == 1)
+                        if (!resetting)
                         {
-                            blockAtPos = 1;
-                        }
-                        else
-                        {
-                            blockAtPos = shapes[1][previewBlock]
-                                    >> (previewBlock == SQUARE ? curr : 7 - curr) & 1;
-                            curr++;
-                        }
+                            if (i == 1 && j == 1)
+                            {
+                                blockAtPos = 1;
+                            }
+                            else
+                            {
+                                blockAtPos = shapes[1][previewBlock]
+                                        >> (previewBlock == SQUARE ? curr : 7 - curr) & 1;
+                                curr++;
+                            }
 
-                        if (blockAtPos)
-                        {
-                            ST7789_DrawRectangle(
-                                    FRAME_X_OFF + (COLS + 1 + i + xOffset) * BLOCK_SIZE + 1,
-                                    FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1,
-                                    BLOCK_SIZE - 2,
-                                    BLOCK_SIZE - 2,
-                                    colors[previewBlock]);
-                        }
-                        else
-                        {
-                            ST7789_DrawRectangle(
-                                    FRAME_X_OFF + (COLS + 1 + i + xOffset) * BLOCK_SIZE + 1,
-                                    FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1,
-                                    BLOCK_SIZE - 2,
-                                    BLOCK_SIZE - 2,
-                                    0);
+                            if (blockAtPos)
+                            {
+                                ST7789_DrawRectangle(
+                                        FRAME_X_OFF + (COLS + 1 + i + xOffset) * BLOCK_SIZE + 1,
+                                        FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1,
+                                        BLOCK_SIZE - 2,
+                                        BLOCK_SIZE - 2,
+                                        colors[previewBlock]);
+                            }
+                            else
+                            {
+                                ST7789_DrawRectangle(
+                                        FRAME_X_OFF + (COLS + 1 + i + xOffset) * BLOCK_SIZE + 1,
+                                        FRAME_Y_OFF + (ROWS - yOffset + j) * BLOCK_SIZE + 1,
+                                        BLOCK_SIZE - 2,
+                                        BLOCK_SIZE - 2,
+                                        0);
+                            }
                         }
                     }
                 }
-            }
-
-            if (previewBlock == LINE)
-            {
-                ST7789_DrawRectangle(FRAME_X_OFF + (COLS + 2 + xOffset) * BLOCK_SIZE + 1,
-                FRAME_Y_OFF + (ROWS - yOffset + 3) * BLOCK_SIZE + 1,
-                                     BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[previewBlock]);
-            }
-            else
-            {
-                ST7789_DrawRectangle(FRAME_X_OFF + (COLS + 2 + xOffset) * BLOCK_SIZE + 1,
-                FRAME_Y_OFF + (ROWS - yOffset + 3) * BLOCK_SIZE + 1,
-                                     BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                if (previewBlock == LINE)
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + (COLS + 2 + xOffset) * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + (ROWS - yOffset + 3) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, colors[previewBlock]);
+                }
+                else
+                {
+                    ST7789_DrawRectangle(FRAME_X_OFF + (COLS + 2 + xOffset) * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + (ROWS - yOffset + 3) * BLOCK_SIZE + 1,
+                                         BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
+                }
             }
 
             if (curBlock <= 4)
