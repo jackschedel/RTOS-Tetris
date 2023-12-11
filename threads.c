@@ -43,6 +43,7 @@
 #define BLOCK_SIZE 10
 #define DARK_GRAY 0x31A6
 #define GRAY 0xAD55
+#define SHADOW_COLOR 0xFFFF
 
 #define START_X 3
 #define START_Y ROWS - 2
@@ -85,6 +86,8 @@ uint8_t level_num = 1;
 uint8_t curBlockInd = 0;
 int8_t heldBlock = -1;
 uint8_t curBlock;
+int8_t shadowX[4] = { -1 };
+int8_t shadowY[4] = { -1 };
 
 unsigned char static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
 unsigned char old_static_blocks[BLOCKS_ARRAY_SIZE] = { 0 };
@@ -135,19 +138,14 @@ void Lost_Thread()
         resetting = 0;
         G8RTOS_SignalSemaphore(&sem_update_ui);
 
-        if (score != 0)
-        {
-            ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2,
-            FRAME_Y_OFF + 5 * BLOCK_SIZE - 2,
-                                 5 * FONT_WIDTH, FONT_WIDTH, 0);
-        }
+        ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2,
+        FRAME_Y_OFF + 5 * BLOCK_SIZE - 2,
+                             5 * FONT_WIDTH, FONT_WIDTH, 0);
 
-        if (level_num != 1)
-        {
-            ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2 - FONT_WIDTH,
-            FRAME_Y_OFF + 1 * BLOCK_SIZE - 2,
-                                 6 * FONT_WIDTH, FONT_WIDTH, 0);
-        }
+        ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2 - FONT_WIDTH,
+        FRAME_Y_OFF + 1 * BLOCK_SIZE - 2,
+                             6 * FONT_WIDTH, FONT_WIDTH, 0);
+
     }
 }
 
@@ -182,13 +180,13 @@ void FallingBlock_Thread()
 
     curBlock = piece_grab_bag[curBlockInd];
 
-// https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
-// 1x4 is 5, 2x2 is 6
+    // https://i.pinimg.com/736x/07/bf/d7/07bfd7e344183c428d841cf2813de97a.jpg
+    // 1x4 is 5, 2x2 is 6
 
-// 3x3 grid (middle always filled)
-// 0 1 2
-// 3 F 4
-// 5 6 7
+    // 3x3 grid (middle always filled)
+    // 0 1 2
+    // 3 F 4
+    // 5 6 7
     unsigned char shapes[4][NUM_SHAPES] = { { 0b10011000, 0b00111000, 0b01110000, 0b01011000,
                                               0b11001000, 0b00010110, 0b00011000 },
                                             { 0b01100010, 0b01000011, 0b01001001, 0b01001010,
@@ -222,6 +220,20 @@ void FallingBlock_Thread()
         instaDrop = 0;
         reRenderBlock = 0;
         wallKick = 0;
+
+        // clear shadow
+        if (move != MOVE_DOWN && shadowX[0] != -1)
+        {
+            for (int8_t j = 0; j < 4; j++)
+            {
+                ST7789_DrawRectangle(
+                FRAME_X_OFF + shadowX[j] * BLOCK_SIZE + 1,
+                                     FRAME_Y_OFF + shadowY[j] * BLOCK_SIZE + 1,
+                                     BLOCK_SIZE - 2,
+                                     BLOCK_SIZE - 2, 0);
+            }
+        }
+
         if (move == MOVE_NONE)
         {
             // rendering for held piece and lookahead preview
@@ -923,6 +935,23 @@ void FallingBlock_Thread()
                         }
                     }
                 }
+                if (curBlock == LINE)
+                {
+                    if (ROT_VERTICAL)
+                    {
+                        if (move == MOVE_NONE && getStaticBlockBit(blockX + 1, blockY + 3))
+                        {
+                            resetting = 1;
+                        }
+                    }
+                    else
+                    {
+                        if (move == MOVE_NONE && getStaticBlockBit(blockX + 3, blockY + 1))
+                        {
+                            resetting = 1;
+                        }
+                    }
+                }
 
                 if (resetting)
                 {
@@ -1005,6 +1034,7 @@ void FallingBlock_Thread()
             }
 
             // reset coords for newly spawned block
+            shadowX[0] = -1;
             blockRotation = 1;
             blockY = START_Y;
             blockX = START_X;
@@ -1016,6 +1046,122 @@ void FallingBlock_Thread()
         {
             // chain trigger another instadrop if the piece hasn't been placed yet
             G8RTOS_WriteFIFO(0, 5);
+        }
+        else
+        {
+            // find y offset for shadow
+            uint8_t previewOffset = 1;
+            uint8_t done = 0;
+            while (!done)
+            {
+                curr = 0;
+                for (int8_t j = 2; j >= 0; j--)
+                {
+                    for (int8_t i = 0; i < 3; i++)
+                    {
+                        if (i == 1 && j == 1)
+                        {
+                            blockAtPos = 1;
+                        }
+                        else
+                        {
+                            blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
+                                    & 1;
+                            curr++;
+                        }
+
+                        if (blockAtPos)
+                        {
+                            if (getStaticBlockBit(blockX + i, blockY + j - previewOffset))
+                            {
+                                done = 1;
+
+                            }
+                        }
+                    }
+                }
+                if (curBlock == LINE)
+                {
+                    if (ROT_VERTICAL)
+                    {
+                        if (getStaticBlockBit(blockX + 1, blockY + 3 - previewOffset))
+                        {
+                            done = 1;
+                        }
+                    }
+                    else
+                    {
+                        if (getStaticBlockBit(blockX + 3, blockY + 1 - previewOffset))
+                        {
+                            done = 1;
+                        }
+                    }
+                }
+                previewOffset++;
+            }
+            previewOffset -= 2;
+
+            // render shadow
+            uint8_t shadowIndex = 0;
+            curr = 0;
+            if (previewOffset > 0)
+            {
+                for (int8_t j = 2; j >= 0; j--)
+                {
+                    for (int8_t i = 0; i < 3; i++)
+                    {
+
+                        if (i == 1 && j == 1)
+                        {
+                            blockAtPos = 1;
+                        }
+                        else
+                        {
+                            blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
+                                    & 1;
+                            curr++;
+                        }
+
+                        if (blockAtPos)
+                        {
+                            shadowX[shadowIndex] = blockX + i;
+                            shadowY[shadowIndex++] = blockY + j - previewOffset;
+                            if (previewOffset - j > 0)
+                            {
+                                ST7789_DrawRectangle(
+                                        FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
+                                        FRAME_Y_OFF + (blockY + j - previewOffset) * BLOCK_SIZE + 1,
+                                        BLOCK_SIZE - 2,
+                                        BLOCK_SIZE - 2,
+                                        SHADOW_COLOR);
+                            }
+                        }
+                    }
+                }
+                if (curBlock == LINE)
+                {
+                    if (ROT_VERTICAL)
+                    {
+                        if (previewOffset > 3)
+                        {
+                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                            FRAME_Y_OFF + (blockY + 3 - previewOffset) * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, SHADOW_COLOR);
+                            shadowX[shadowIndex] = blockX + 1;
+                            shadowY[shadowIndex] = blockY + 3 - previewOffset;
+                        }
+                    }
+                    else
+                    {
+                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
+                        FRAME_Y_OFF + (blockY + 1 - previewOffset) * BLOCK_SIZE + 1,
+                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, SHADOW_COLOR);
+                        shadowX[shadowIndex] = blockX + 3;
+                        shadowY[shadowIndex] = blockY + 1 - previewOffset;
+                    }
+                }
+            }
+
         }
 
         UARTprintf("\nTime: %d\n", timer);
@@ -1136,8 +1282,6 @@ uint8_t is_dead = 0;
 
 void DrawUI_Thread()
 {
-    uint8_t prevScore = 255;
-    uint8_t prevLevel = 255;
     char title[6];
     char numstr[4];
 
@@ -1159,37 +1303,28 @@ void DrawUI_Thread()
     {
         G8RTOS_WaitSemaphore(&sem_update_ui);
 
-        if (prevScore != score)
-        {
-            sprintf(numstr, "%u", score);
-            ST7789_DrawText(
-                    &FontStyle_Emulogic,
-                    (const char*) &numstr,
-                    FRAME_X_OFF - (5 * FONT_WIDTH) - 2 + FONT_WIDTH * 2
-                            - (score > 9 ? FONT_WIDTH / 2 : 0) - (score > 99 ? FONT_WIDTH / 2 : 0)
-                            - (score > 999 ? FONT_WIDTH / 2 : 0)
-                            - (score > 9999 ? FONT_WIDTH / 2 : 0)
-                            - (score > 99999 ? FONT_WIDTH : 0),
-                    FRAME_Y_OFF + 5 * BLOCK_SIZE - 2,
-                    ST7789_WHITE,
-                    ST7789_BLACK);
-        }
+        sprintf(numstr, "%u", score);
+        ST7789_DrawText(
+                &FontStyle_Emulogic,
+                (const char*) &numstr,
+                FRAME_X_OFF - (5 * FONT_WIDTH) - 2 + FONT_WIDTH * 2
+                        - (score > 9 ? FONT_WIDTH / 2 : 0) - (score > 99 ? FONT_WIDTH / 2 : 0)
+                        - (score > 999 ? FONT_WIDTH / 2 : 0) - (score > 9999 ? FONT_WIDTH / 2 : 0)
+                        - (score > 99999 ? FONT_WIDTH : 0),
+                FRAME_Y_OFF + 5 * BLOCK_SIZE - 2,
+                ST7789_WHITE,
+                ST7789_BLACK);
 
-        if (prevLevel != level_num)
-        {
-            sprintf(numstr, "%u", level_num);
-            ST7789_DrawText(
-                    &FontStyle_Emulogic,
-                    (const char*) &numstr,
-                    FRAME_X_OFF - (5 * FONT_WIDTH)
-                            + (level_num > 9 ? FONT_WIDTH + FONT_WIDTH / 2 : FONT_WIDTH * 2) - 2,
-                    FRAME_Y_OFF + 1 * BLOCK_SIZE - 2,
-                    ST7789_WHITE,
-                    ST7789_BLACK);
-        }
+        sprintf(numstr, "%u", level_num);
+        ST7789_DrawText(
+                &FontStyle_Emulogic,
+                (const char*) &numstr,
+                FRAME_X_OFF - (5 * FONT_WIDTH)
+                        + (level_num > 9 ? FONT_WIDTH + FONT_WIDTH / 2 : FONT_WIDTH * 2) - 2,
+                FRAME_Y_OFF + 1 * BLOCK_SIZE - 2,
+                ST7789_WHITE,
+                ST7789_BLACK);
 
-        prevLevel = level_num;
-        prevScore = score;
         G8RTOS_Yield();
     }
 }
