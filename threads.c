@@ -1120,14 +1120,14 @@ void DrawUI_Thread()
 
     sprintf(title, "SCORE");
     ST7789_DrawText(&FontStyle_Emulogic, (const char*) &title,
-    FRAME_X_OFF - (5 * BLOCK_SIZE),
+    FRAME_X_OFF - (5 * FONT_WIDTH) - 2,
                     FRAME_Y_OFF + 9 * BLOCK_SIZE,
                     ST7789_WHITE,
                     ST7789_BLACK);
 
     sprintf(title, "LEVEL");
     ST7789_DrawText(&FontStyle_Emulogic, (const char*) &title,
-    FRAME_X_OFF - (5 * BLOCK_SIZE),
+    FRAME_X_OFF - (5 * FONT_WIDTH) - 2,
                     FRAME_Y_OFF + 3 * BLOCK_SIZE,
                     ST7789_WHITE,
                     ST7789_BLACK);
@@ -1139,8 +1139,8 @@ void DrawUI_Thread()
         {
             sprintf(numstr, "%u", score);
             ST7789_DrawText(&FontStyle_Emulogic, (const char*) &numstr,
-            FRAME_X_OFF - (4 * BLOCK_SIZE),
-                            FRAME_Y_OFF + 8 * BLOCK_SIZE,
+            FRAME_X_OFF - (5 * FONT_WIDTH) - 2,
+                            FRAME_Y_OFF + 8 * BLOCK_SIZE - 2,
                             ST7789_WHITE,
                             ST7789_BLACK);
         }
@@ -1148,11 +1148,14 @@ void DrawUI_Thread()
         if (prevLevel != level_num)
         {
             sprintf(numstr, "%u", level_num);
-            ST7789_DrawText(&FontStyle_Emulogic, (const char*) &numstr,
-            FRAME_X_OFF - (4 * BLOCK_SIZE),
-                            FRAME_Y_OFF + 2 * BLOCK_SIZE,
-                            ST7789_WHITE,
-                            ST7789_BLACK);
+            ST7789_DrawText(
+                    &FontStyle_Emulogic,
+                    (const char*) &numstr,
+                    FRAME_X_OFF - (5 * FONT_WIDTH)
+                            + (level_num > 9 ? FONT_WIDTH + FONT_WIDTH / 2 : FONT_WIDTH * 2) - 2,
+                    FRAME_Y_OFF + 2 * BLOCK_SIZE - 2,
+                    ST7789_WHITE,
+                    ST7789_BLACK);
         }
 
         prevLevel = level_num;
