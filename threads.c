@@ -181,6 +181,47 @@ void FallingBlock_Thread()
         wallKick = 0;
         if (move == MOVE_NONE)
         {
+
+            curr = 0;
+            for (int8_t j = 2; j >= 0; j--)
+            {
+                for (int8_t i = 0; i < 3; i++)
+                {
+                    if (!resetting)
+                    {
+                        if (i == 1 && j == 1)
+                        {
+                            blockAtPos = 1;
+                        }
+                        else
+                        {
+                            blockAtPos = shapes[1][piece_grab_bag[(curBlockInd + 1) % NUM_SHAPES]]
+                                    >> (7 - curr) & 1;
+                            curr++;
+                        }
+
+                        if (blockAtPos)
+                        {
+                            ST7789_DrawRectangle(
+                                    FRAME_X_OFF + ( COLS + 1 + i) * BLOCK_SIZE + 1,
+                                    FRAME_Y_OFF + (ROWS - 3 + j) * BLOCK_SIZE + 1,
+                                    BLOCK_SIZE - 2,
+                                    BLOCK_SIZE - 2,
+                                    colors[piece_grab_bag[(curBlockInd + 1) % NUM_SHAPES]]);
+
+                        }
+                        else
+                        {
+                            ST7789_DrawRectangle(
+                            FRAME_X_OFF + ( COLS + 1 + i) * BLOCK_SIZE + 1,
+                                                 FRAME_Y_OFF + (ROWS - 3 + j) * BLOCK_SIZE + 1,
+                                                 BLOCK_SIZE - 2,
+                                                 BLOCK_SIZE - 2, 0);
+                        }
+                    }
+                }
+            }
+
             if (curBlock <= 4)
             {
                 blockY--;
@@ -351,7 +392,8 @@ void FallingBlock_Thread()
                             FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
                                                  FRAME_Y_OFF + (blockY + j) * BLOCK_SIZE + 1,
                                                  BLOCK_SIZE - 2,
-                                                 BLOCK_SIZE - 2, GRAY);
+                                                 BLOCK_SIZE - 2,
+                                                 GRAY);
                             setStaticBlockBit(blockX + i, blockY + j, 1, 1);
                         }
                     }
