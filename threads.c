@@ -62,7 +62,7 @@
 #define EMPTY_WALLKICK 127
 
 #define GRAVITY_THREAD_ID 50
-#define START_SPEED 1200
+#define START_SPEED 1000.0
 
 #define ROT_VERTICAL (blockRotation - 1) % 2
 
@@ -77,6 +77,7 @@ int8_t blockX = START_X;
 uint8_t resetting = 0;
 uint8_t timer = 0;
 uint32_t score = 0;
+uint8_t lines_cleared = 0;
 uint8_t level_num = 1;
 uint8_t curBlockInd = 0;
 int8_t heldBlock = -1;
@@ -102,7 +103,7 @@ void Lost_Thread()
     {
         G8RTOS_WaitSemaphore(&sem_lost);
 
-        G8RTOS_Change_Period(GRAVITY_THREAD_ID, START_SPEED / 2);
+        G8RTOS_Change_Period(GRAVITY_THREAD_ID, (uint32_t) START_SPEED);
 
         G8RTOS_Sleep(800);
 
@@ -116,6 +117,8 @@ void Lost_Thread()
                              BLOCK_SIZE * ROWS - 1, 0);
         score = 0;
         resetting = 0;
+        lines_cleared = 0;
+        level_num = 1;
 
         blockY = START_Y;
         blockX = START_X;
@@ -177,7 +180,7 @@ void FallingBlock_Thread()
                                             { 0b01000110, 0b11000010, 0b10010010, 0b01010010,
                                               0b01010100, 0b00010110, 0b01000010 } };
 
-    G8RTOS_Add_PeriodicEvent(Gravity_P, START_SPEED, 50, GRAVITY_THREAD_ID);
+    G8RTOS_Add_PeriodicEvent(Gravity_P, (uint32_t) START_SPEED, 50, GRAVITY_THREAD_ID);
 
     G8RTOS_WriteFIFO(0, 0);
 
@@ -999,12 +1002,15 @@ void FallingBlock_Thread()
 
 void StaticBlocks_Thread()
 {
-    int8_t i, j, numCleared;
-    uint8_t old, shifted;
+    int8_t i, j, numCleared, prevNumCleared = 0;
+    uint8_t old, shifted, prevLevelNum;
 
     while (true)
     {
         G8RTOS_WaitSemaphore(&sem_clearLine);
+
+        prevLevelNum = level_num;
+        prevNumCleared = numCleared;
 
         // check the number of lines cleared in this drop
         numCleared = 0;
@@ -1023,12 +1029,21 @@ void StaticBlocks_Thread()
                     }
                 }
                 numCleared++;
+                lines_cleared++;
                 slideStaticBlocks(i);
             }
         }
 
         if (!numCleared)
             continue;
+
+        level_num = (lines_cleared / 10) + 1;
+
+        if (prevLevelNum != level_num)
+        {
+            float_t period = START_SPEED * pow((0.8333), level_num) + (START_SPEED / 6.0);
+            G8RTOS_Change_Period(GRAVITY_THREAD_ID, (uint32_t) period);
+        }
 
         // update score
         if (numCleared == 1)
@@ -1045,7 +1060,14 @@ void StaticBlocks_Thread()
         }
         else if (numCleared == 4)
         {
-            score += 800 * level_num;
+            if (prevNumCleared == 4)
+            {
+                score += 1200 * level_num;
+            }
+            else
+            {
+                score += 800 * level_num;
+            }
         }
 
         // shift down the static blocks
@@ -1080,8 +1102,6 @@ void StaticBlocks_Thread()
                                          BLOCK_SIZE - 2, BLOCK_SIZE - 2, 0);
             }
         }
-
-        numCleared = 0;
     }
 }
 
