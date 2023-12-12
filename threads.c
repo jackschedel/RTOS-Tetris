@@ -109,14 +109,16 @@ void Lost_Thread()
     {
         G8RTOS_WaitSemaphore(&sem_lost);
 
-        G8RTOS_Change_Period(GRAVITY_THREAD_ID, (uint32_t) START_SPEED);
-
-        G8RTOS_Sleep(800);
+        G8RTOS_Sleep(500);
 
         for (uint8_t i = 0; i < BLOCKS_ARRAY_SIZE; i++)
         {
             static_blocks[i] = 0;
         }
+
+        UARTprintf("Score: %d\n", score);
+
+        G8RTOS_Change_Period(GRAVITY_THREAD_ID, (uint32_t) START_SPEED);
 
         ST7789_DrawRectangle(FRAME_X_OFF, FRAME_Y_OFF,
         BLOCK_SIZE * COLS - 1,
@@ -1118,30 +1120,27 @@ void FallingBlock_Thread()
                         {
                             shadowX[shadowIndex] = blockX + i;
                             shadowY[shadowIndex++] = blockY + j - previewOffset;
-                            if (previewOffset - j > 0)
-                            {
-                                ST7789_DrawOutline(
-                                        FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
-                                        FRAME_Y_OFF + (blockY + j - previewOffset) * BLOCK_SIZE + 1,
-                                        BLOCK_SIZE - 2,
-                                        BLOCK_SIZE - 2,
-                                        SHADOW_COLOR);
-                            }
+                            ST7789_DrawOutline(
+                                    FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
+                                    FRAME_Y_OFF + (blockY + j - previewOffset) * BLOCK_SIZE + 1,
+                                    BLOCK_SIZE - 2,
+                                    BLOCK_SIZE - 2,
+                                    SHADOW_COLOR);
                         }
+
                     }
                 }
                 if (curBlock == LINE)
                 {
                     if (ROT_VERTICAL)
                     {
-                        if (previewOffset > 3)
-                        {
-                            ST7789_DrawOutline(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                                    FRAME_Y_OFF + (blockY + 3 - previewOffset) * BLOCK_SIZE + 1,
-                                    BLOCK_SIZE - 2, BLOCK_SIZE - 2, SHADOW_COLOR);
-                            shadowX[shadowIndex] = blockX + 1;
-                            shadowY[shadowIndex] = blockY + 3 - previewOffset;
-                        }
+
+                        ST7789_DrawOutline(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                                FRAME_Y_OFF + (blockY + 3 - previewOffset) * BLOCK_SIZE + 1,
+                                BLOCK_SIZE - 2, BLOCK_SIZE - 2, SHADOW_COLOR);
+                        shadowX[shadowIndex] = blockX + 1;
+                        shadowY[shadowIndex] = blockY + 3 - previewOffset;
+
                     }
                     else
                     {
@@ -1156,8 +1155,6 @@ void FallingBlock_Thread()
 
         }
 
-        UARTprintf("\nTime: %d\n", timer);
-        UARTprintf("Score: %d\n", score);
         G8RTOS_Yield();
     }
 }
