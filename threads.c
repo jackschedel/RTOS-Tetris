@@ -72,14 +72,13 @@
 // maximum value is NUM_SHAPES
 #define PREVIEW_COUNT 4
 
-uint8_t point_count = 0;
-uint8_t highscore = 0;
+uint32_t highscore = 0;
 uint8_t line_count = 1;
 uint8_t blockRotation = 1;
 int8_t blockY = START_Y;
 int8_t blockX = START_X;
 uint8_t resetting = 0;
-uint8_t timer = 0;
+uint32_t timer = 0;
 uint32_t score = 0;
 uint8_t lines_cleared = 0;
 uint8_t level_num = 1;
