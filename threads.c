@@ -43,7 +43,7 @@
 #define BLOCK_SIZE 10
 #define DARK_GRAY 0x31A6
 #define GRAY 0xAD55
-#define SHADOW_COLOR 0xFFFF
+#define SHADOW_COLOR colors[curBlock]
 
 #define START_X 3
 #define START_Y ROWS - 2
@@ -133,6 +133,7 @@ void Lost_Thread()
         randomiseGrabBag();
         curBlockInd = 0;
         curBlock = piece_grab_bag[curBlockInd];
+        heldBlock = -1;
 
         G8RTOS_WriteFIFO(0, 0);
         resetting = 0;
@@ -161,18 +162,9 @@ void FallingBlock_Thread()
 
     uint16_t colors[NUM_SHAPES] = { 0xF800, 0x055F, 0x07E0, 0xF81F, 0x001F, 0x07FF, 0xFFE0 };
 
-    ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF - 1,
-    FRAME_X_OFF + BLOCK_SIZE * COLS,
-                    FRAME_Y_OFF - 1, 0xFFFF);
-    ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF - 1,
-    FRAME_X_OFF - 1,
-                    FRAME_Y_OFF + BLOCK_SIZE * ROWS, 0xFFFF);
-    ST7789_DrawLine(FRAME_X_OFF - 1, FRAME_Y_OFF + BLOCK_SIZE * ROWS,
-    FRAME_X_OFF + BLOCK_SIZE * COLS,
-                    FRAME_Y_OFF + BLOCK_SIZE * ROWS, 0xFFFF);
-    ST7789_DrawLine(FRAME_X_OFF + BLOCK_SIZE * COLS, FRAME_Y_OFF - 1,
-    FRAME_X_OFF + BLOCK_SIZE * COLS,
-                    FRAME_Y_OFF + BLOCK_SIZE * ROWS, 0xFFFF);
+    ST7789_DrawOutline(FRAME_X_OFF - 1, FRAME_Y_OFF - 1, BLOCK_SIZE * COLS + 2,
+    BLOCK_SIZE * ROWS + 2,
+                       0xFFFF);
 
     renderCrosshatchGrid();
 
@@ -226,11 +218,11 @@ void FallingBlock_Thread()
         {
             for (int8_t j = 0; j < 4; j++)
             {
-                ST7789_DrawRectangle(
+                ST7789_DrawOutline(
                 FRAME_X_OFF + shadowX[j] * BLOCK_SIZE + 1,
-                                     FRAME_Y_OFF + shadowY[j] * BLOCK_SIZE + 1,
-                                     BLOCK_SIZE - 2,
-                                     BLOCK_SIZE - 2, 0);
+                                   FRAME_Y_OFF + shadowY[j] * BLOCK_SIZE + 1,
+                                   BLOCK_SIZE - 2,
+                                   BLOCK_SIZE - 2, 0);
             }
         }
 
@@ -1128,7 +1120,7 @@ void FallingBlock_Thread()
                             shadowY[shadowIndex++] = blockY + j - previewOffset;
                             if (previewOffset - j > 0)
                             {
-                                ST7789_DrawRectangle(
+                                ST7789_DrawOutline(
                                         FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
                                         FRAME_Y_OFF + (blockY + j - previewOffset) * BLOCK_SIZE + 1,
                                         BLOCK_SIZE - 2,
@@ -1144,18 +1136,18 @@ void FallingBlock_Thread()
                     {
                         if (previewOffset > 3)
                         {
-                            ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                            FRAME_Y_OFF + (blockY + 3 - previewOffset) * BLOCK_SIZE + 1,
-                                                 BLOCK_SIZE - 2, BLOCK_SIZE - 2, SHADOW_COLOR);
+                            ST7789_DrawOutline(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                                    FRAME_Y_OFF + (blockY + 3 - previewOffset) * BLOCK_SIZE + 1,
+                                    BLOCK_SIZE - 2, BLOCK_SIZE - 2, SHADOW_COLOR);
                             shadowX[shadowIndex] = blockX + 1;
                             shadowY[shadowIndex] = blockY + 3 - previewOffset;
                         }
                     }
                     else
                     {
-                        ST7789_DrawRectangle(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
-                        FRAME_Y_OFF + (blockY + 1 - previewOffset) * BLOCK_SIZE + 1,
-                                             BLOCK_SIZE - 2, BLOCK_SIZE - 2, SHADOW_COLOR);
+                        ST7789_DrawOutline(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
+                                FRAME_Y_OFF + (blockY + 1 - previewOffset) * BLOCK_SIZE + 1,
+                                BLOCK_SIZE - 2, BLOCK_SIZE - 2, SHADOW_COLOR);
                         shadowX[shadowIndex] = blockX + 3;
                         shadowY[shadowIndex] = blockY + 1 - previewOffset;
                     }

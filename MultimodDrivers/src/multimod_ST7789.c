@@ -392,6 +392,14 @@ void ST7789_DrawRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16
     ST7789_Deselect();
 }
 
+void ST7789_DrawOutline(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color)
+{
+    ST7789_DrawLine(x, y, x + w - 1, y, color);
+    ST7789_DrawLine(x, y, x, y + h - 1, color);
+    ST7789_DrawLine(x, y + h - 1, x + w - 1, y + h - 1, color);
+    ST7789_DrawLine(x + w - 1, y, x + w - 1, y + h - 1, color);
+}
+
 const uint8_t* ST7789_GetCharGlyph(const fontStyle_t *font, char c)
 {
     int low = 0;
