@@ -743,7 +743,7 @@ void FallingBlock_Thread()
                                     & 1;
                             curr++;
 
-                            if (blockAtPos && !prevBlockAtPos)
+                            if (blockAtPos)
                             {
                                 ST7789_DrawRectangle(
                                 FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
@@ -1098,61 +1098,57 @@ void FallingBlock_Thread()
             // render shadow
             uint8_t shadowIndex = 0;
             curr = 0;
-            if (previewOffset > 0)
+
+            for (int8_t j = 2; j >= 0; j--)
             {
-                for (int8_t j = 2; j >= 0; j--)
+                for (int8_t i = 0; i < 3; i++)
                 {
-                    for (int8_t i = 0; i < 3; i++)
+
+                    if (i == 1 && j == 1)
                     {
-
-                        if (i == 1 && j == 1)
-                        {
-                            blockAtPos = 1;
-                        }
-                        else
-                        {
-                            blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr)
-                                    & 1;
-                            curr++;
-                        }
-
-                        if (blockAtPos)
-                        {
-                            shadowX[shadowIndex] = blockX + i;
-                            shadowY[shadowIndex++] = blockY + j - previewOffset;
-                            ST7789_DrawOutline(
-                                    FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
-                                    FRAME_Y_OFF + (blockY + j - previewOffset) * BLOCK_SIZE + 1,
-                                    BLOCK_SIZE - 2,
-                                    BLOCK_SIZE - 2,
-                                    SHADOW_COLOR);
-                        }
-
-                    }
-                }
-                if (curBlock == LINE)
-                {
-                    if (ROT_VERTICAL)
-                    {
-
-                        ST7789_DrawOutline(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
-                                FRAME_Y_OFF + (blockY + 3 - previewOffset) * BLOCK_SIZE + 1,
-                                BLOCK_SIZE - 2, BLOCK_SIZE - 2, SHADOW_COLOR);
-                        shadowX[shadowIndex] = blockX + 1;
-                        shadowY[shadowIndex] = blockY + 3 - previewOffset;
-
+                        blockAtPos = 1;
                     }
                     else
                     {
-                        ST7789_DrawOutline(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
-                                FRAME_Y_OFF + (blockY + 1 - previewOffset) * BLOCK_SIZE + 1,
-                                BLOCK_SIZE - 2, BLOCK_SIZE - 2, SHADOW_COLOR);
-                        shadowX[shadowIndex] = blockX + 3;
-                        shadowY[shadowIndex] = blockY + 1 - previewOffset;
+                        blockAtPos = shapes[(blockRotation - 1) % 4][curBlock] >> (7 - curr) & 1;
+                        curr++;
                     }
+
+                    if (blockAtPos)
+                    {
+                        shadowX[shadowIndex] = blockX + i;
+                        shadowY[shadowIndex++] = blockY + j - previewOffset;
+                        ST7789_DrawOutline(
+                                FRAME_X_OFF + (blockX + i) * BLOCK_SIZE + 1,
+                                FRAME_Y_OFF + (blockY + j - previewOffset) * BLOCK_SIZE + 1,
+                                BLOCK_SIZE - 2,
+                                BLOCK_SIZE - 2,
+                                SHADOW_COLOR);
+                    }
+
                 }
             }
+            if (curBlock == LINE)
+            {
+                if (ROT_VERTICAL)
+                {
 
+                    ST7789_DrawOutline(FRAME_X_OFF + (blockX + 1) * BLOCK_SIZE + 1,
+                    FRAME_Y_OFF + (blockY + 3 - previewOffset) * BLOCK_SIZE + 1,
+                                       BLOCK_SIZE - 2, BLOCK_SIZE - 2, SHADOW_COLOR);
+                    shadowX[shadowIndex] = blockX + 1;
+                    shadowY[shadowIndex] = blockY + 3 - previewOffset;
+
+                }
+                else
+                {
+                    ST7789_DrawOutline(FRAME_X_OFF + (blockX + 3) * BLOCK_SIZE + 1,
+                            FRAME_Y_OFF + (blockY + 1 - previewOffset) * BLOCK_SIZE + 1,
+                            BLOCK_SIZE - 2, BLOCK_SIZE - 2, SHADOW_COLOR);
+                    shadowX[shadowIndex] = blockX + 3;
+                    shadowY[shadowIndex] = blockY + 1 - previewOffset;
+                }
+            }
         }
 
         G8RTOS_Yield();
