@@ -73,6 +73,7 @@
 #define PREVIEW_COUNT 4
 
 uint8_t point_count = 0;
+uint8_t highscore = 0;
 uint8_t line_count = 1;
 uint8_t blockRotation = 1;
 int8_t blockY = START_Y;
@@ -116,6 +117,12 @@ void Lost_Thread()
         }
 
         UARTprintf("Score: %d\n", score);
+        if (score > highscore)
+        {
+            highscore = score;
+        }
+        G8RTOS_SignalSemaphore(&sem_update_ui);
+        G8RTOS_Yield();
 
         G8RTOS_Change_Period(GRAVITY_THREAD_ID, (uint32_t) START_SPEED);
 
@@ -140,9 +147,13 @@ void Lost_Thread()
         resetting = 0;
         G8RTOS_SignalSemaphore(&sem_update_ui);
 
-        ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2,
+        ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2 - FONT_WIDTH,
+        FRAME_Y_OFF + 9 * BLOCK_SIZE - 2,
+                             6 * FONT_WIDTH, FONT_WIDTH, 0);
+
+        ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2 - FONT_WIDTH,
         FRAME_Y_OFF + 5 * BLOCK_SIZE - 2,
-                             5 * FONT_WIDTH, FONT_WIDTH, 0);
+                             6 * FONT_WIDTH, FONT_WIDTH, 0);
 
         ST7789_DrawRectangle(FRAME_X_OFF - (5 * FONT_WIDTH) - 2 - FONT_WIDTH,
         FRAME_Y_OFF + 1 * BLOCK_SIZE - 2,
@@ -1186,6 +1197,13 @@ void DrawUI_Thread()
     char title[6];
     char numstr[4];
 
+    sprintf(title, "HIGH");
+    ST7789_DrawText(&FontStyle_Emulogic, (const char*) &title,
+    FRAME_X_OFF - (5 * FONT_WIDTH) - 2 + FONT_WIDTH / 2,
+                    FRAME_Y_OFF + 10 * BLOCK_SIZE,
+                    ST7789_WHITE,
+                    ST7789_BLACK);
+
     sprintf(title, "SCORE");
     ST7789_DrawText(&FontStyle_Emulogic, (const char*) &title,
     FRAME_X_OFF - (5 * FONT_WIDTH) - 2,
@@ -1203,6 +1221,20 @@ void DrawUI_Thread()
     while (true)
     {
         G8RTOS_WaitSemaphore(&sem_update_ui);
+
+        sprintf(numstr, "%u", highscore);
+        ST7789_DrawText(
+                &FontStyle_Emulogic,
+                (const char*) &numstr,
+                FRAME_X_OFF - (5 * FONT_WIDTH) - 2 + FONT_WIDTH * 2
+                        - (highscore > 9 ? FONT_WIDTH / 2 : 0)
+                        - (highscore > 99 ? FONT_WIDTH / 2 : 0)
+                        - (highscore > 999 ? FONT_WIDTH / 2 : 0)
+                        - (highscore > 9999 ? FONT_WIDTH / 2 : 0)
+                        - (highscore > 99999 ? FONT_WIDTH : 0),
+                FRAME_Y_OFF + 9 * BLOCK_SIZE - 2,
+                ST7789_WHITE,
+                ST7789_BLACK);
 
         sprintf(numstr, "%u", score);
         ST7789_DrawText(
