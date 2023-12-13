@@ -65,7 +65,7 @@
 #define LINE 6
 
 #define GRAVITY_THREAD_ID 50
-#define START_SPEED 700.0
+#define START_SPEED 600.0
 
 #define ROT_VERTICAL (blockRotation - 1) % 2
 
@@ -78,6 +78,7 @@ uint8_t blockRotation = 1;
 int8_t blockY = START_Y;
 int8_t blockX = START_X;
 uint8_t resetting = 0;
+uint8_t hold_allowed = 1;
 uint32_t timer = 0;
 uint32_t score = 0;
 uint8_t lines_cleared = 0;
@@ -141,6 +142,7 @@ void Lost_Thread()
         curBlockInd = 0;
         curBlock = piece_grab_bag[curBlockInd];
         heldBlock = -1;
+        hold_allowed = 1;
 
         G8RTOS_WriteFIFO(0, 0);
         resetting = 0;
@@ -813,7 +815,7 @@ void FallingBlock_Thread()
                 if (blockRotation > 4)
                     blockRotation = 1;
             }
-            else if (move == MOVE_SWAP)
+            else if (move == MOVE_SWAP && hold_allowed)
             {
                 if (heldBlock == -1)
                 {
@@ -826,7 +828,7 @@ void FallingBlock_Thread()
                 blockRotation = 1;
                 blockY = START_Y;
                 blockX = START_X;
-
+                hold_allowed = 0;
             }
         }
 
@@ -958,6 +960,7 @@ void FallingBlock_Thread()
             blockRotation = 1;
             blockY = START_Y;
             blockX = START_X;
+            hold_allowed = 1;
 
             piecePlaced = 0;
 
@@ -1125,7 +1128,7 @@ void StaticBlocks_Thread()
         if (prevLevelNum != level_num)
         {
             // https://www.desmos.com/calculator/ir1s0pmyo5
-            float_t period = START_SPEED * pow((0.9), level_num) + (START_SPEED / 20.0);
+            float_t period = START_SPEED * pow((0.8), level_num) + (START_SPEED / 20.0);
             G8RTOS_Change_Period(GRAVITY_THREAD_ID, (uint32_t) period);
         }
 
